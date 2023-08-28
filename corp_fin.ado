@@ -74,7 +74,7 @@ program regx
 
 	syntax anything [if] [in] , indep(namelist) [ctrl(string) absr(string) xtp(string) ///
 	inte(string) clust(namelist) dyn(string) ///
-	tnote(string) ttitle(string) addn(string) edir(string) REPORT DISPLAY CHISTORE]
+	tnote(string) ttitle(string) addn(string) edir(string) keepvar(string) REPORT DISPLAY CHISTORE]
 	
 	marksample touse
 	
@@ -280,7 +280,7 @@ program regx
 					local dyn_year : subinstr local dynopt "y=" "", all
 				}
 				if (strpos("`dynopt'", "b=")) {
-					local dyn_bench : subinstr local dynopt "b=" "", 
+					local dyn_bench : subinstr local dynopt "b=" "", all
 					local dyn_benchname : subinstr local dyn_bench "-" "m", all
 					local dyn_benchname = "t`dyn_benchname'"
 				}
@@ -389,6 +389,7 @@ program regx
 			
 			/* xtreg */
 			xtset `xtpanel'
+			local depidx = 1
 			foreach depvar in `anything' {
 				local indepidx = 1
 				foreach indepvar in `indep' {
@@ -437,6 +438,7 @@ program regx
 					}
 					local indepidx = `indepidx' + 1
 				}
+				local depidx = `depidx' + 1
 			}
 		}
 	}
@@ -617,17 +619,28 @@ program regx
 		}
 				
 		/* If export full variable reports */
-		if "`report'"!="" {
+		if ("`report'"!="") {
 			/* no drop */
 			esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
 			stats(N r2_a, labels("Observations" "Adjusted R-squared")) rename(_cons "Constant") ///
 			order(`var_order') mtitles(`colname') title("`table_title'") note("`table_note'")
 		}
 		else {
-			/* drop control */
-			esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
-			drop(`drop_ctrl') stats(N r2_a, labels("Observations" "Adjusted R-squared")) rename(_cons "Constant") ///
-			order(`var_order') mtitles(`colname') title("`table_title'") note("`table_note'")
+			if ("`keepvar'"!="") {
+				foreach kpv in `keepvar' {
+					local drop_ctrl : subinstr local drop_ctrl "`kpv'" "", all
+				}
+				/* keep selected variables */
+				esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
+				drop(`drop_ctrl') stats(N r2_a, labels("Observations" "Adjusted R-squared")) rename(_cons "Constant") ///
+				order(`var_order') mtitles(`colname') title("`table_title'") note("`table_note'")				
+			}
+			else {
+				/* drop control */
+				esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
+				drop(`drop_ctrl') stats(N r2_a, labels("Observations" "Adjusted R-squared")) rename(_cons "Constant") ///
+				order(`var_order') mtitles(`colname') title("`table_title'") note("`table_note'")
+			}
 		}
 	}
 	

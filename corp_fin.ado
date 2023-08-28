@@ -1,5 +1,9 @@
 ///=============================================================================
-/* A Collection of Programs */
+/*
+ * Project: Programs for corporate finance empirical studies
+ * Author: Hao Zhao
+ * Date: August 28, 2023
+ */
 ///=============================================================================
 /* cnt -> */
 capture program drop cnt

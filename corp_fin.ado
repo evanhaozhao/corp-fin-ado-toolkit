@@ -63,10 +63,6 @@ end
 
 - Dynamic regression: with time indicator [dyn(x, y=, b=, p=, c=, s=)]
 	
-- To-do:
-	- Subsample regression (with coefficient t-test)
-	- Significance identifier
-	
 */
 
 capture program drop regx

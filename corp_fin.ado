@@ -2,7 +2,8 @@
 /*
  * Project: Programs for corporate finance empirical studies
  * Author: Hao Zhao
- * Date: August 30, 2023
+ * Created: August 19, 2023
+ * Modified: August 30, 2023
  */
 ///=============================================================================
 /* cnt -> */

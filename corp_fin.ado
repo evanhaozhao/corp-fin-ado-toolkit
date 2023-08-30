@@ -2,7 +2,7 @@
 /*
  * Project: Programs for corporate finance empirical studies
  * Author: Hao Zhao
- * Date: August 28, 2023
+ * Date: August 30, 2023
  */
 ///=============================================================================
 /* cnt -> */
@@ -44,33 +44,28 @@ end
 ///=============================================================================
 /* regx -> regression to output tables 
 
-- Identifying controls and FEs, supported by `reghdfe`, `reg`, and `xtreg`
-
-- Sending variables to models:
+ * Identifying controls and FEs, supported by `reghdfe`, `reg`, and `xtreg`
+ * Sending variables to models:
 	- Baseline: y ~ x
 	- Interaction: y ~ x1 * x2
 		- x1#x2
 	- Subsample: y ~ x `if'
-	
-- Exporting tables, supported by `esttab`:
+ * Exporting tables, supported by `esttab`:
 	- Ordering variables
 	- Dropping variables
 	- Assigning columns
 	- Adding notes
-	
-- In order to make the code in minimal style, unless specified, the default setting is:
+ * In order to make the code in minimal style, unless specified, the default setting is:
 	- Export file directory: ${dir_table_flow}
-
-- Dynamic regression: with time indicator [dyn(x, y=, b=, p=, c=, s=)]
-	
-*/
-
+ * Dynamic regression: with time indicator [dyn(x, y=, b=, p=, c=, s=)]
+ */
+///=============================================================================
 capture program drop regx
 program regx
 
 	syntax anything [if] [in] , indep(namelist) [ctrl(string) absr(string) xtp(string) ///
 	inte(string) clust(namelist) dyn(string) ///
-	tnote(string) ttitle(string) addn(string) edir(string) keepvar(string) REPORT DISPLAY CHISTORE]
+	tnote(string) ttitle(string) addn(string) edir(string) keepvar(string) stosuf(string) REPORT DISPLAY CHISTORE]
 	
 	marksample touse
 	
@@ -225,13 +220,24 @@ program regx
 				}
 				local inteidx = `inteidx' + 1
 			}
+			
 			/* table variable ordering */
 			local len_inte = ""
 			local inteidx = `inteidx' - 1
 			forval i_inte = 1/`inteidx' {
-				local len_inte = "`len_inte', `: word count `orderinte`i_inte'''"
+				if (`i_inte'==1) {
+					local len_inte = "`: word count `orderinte`i_inte'''"
+				}
+				else {
+					local len_inte = "`len_inte', `: word count `orderinte`i_inte'''"
+				}
 			}
-			local max_len_inte = max(`len_inte')
+			if (`inteidx'<2) {
+				local max_len_inte = 1
+			}
+			else {
+				local max_len_inte = max(`len_inte')
+			}
 			forval idx = 1/`max_len_inte' {
 				forval i_inte = 1/`inteidx' {
 					if (strpos("`orderinte'", "`: word `idx' of `orderinte`i_inte'''")==0) {
@@ -239,7 +245,7 @@ program regx
 					}
 				}
 			}
-			
+
 			/* store interaction list for regression */
 			local inte_reglist`indepidx' = "`expandvars'"
 			local indepidx = `indepidx' + 1
@@ -392,7 +398,7 @@ program regx
 					if ("`inte'"!="") {
 						if ("`chistore'"!="") {
 							reg `depvar' `inte_reglist`indepidx'' `ctrl' if `touse', absorb(`: word 1 of `xtp'')
-							estimates store y`depidx'_x`indepidx'
+							estimates store y`depidx'_x`indepidx'`stosuf'
 						}
 						else {
 							eststo: xtreg `depvar' `inte_reglist`indepidx'' `ctrl' if `touse', `xteffect' vce(`cse')
@@ -402,7 +408,7 @@ program regx
 						if ("`dyn'"!="") {
 							if ("`chistore'"!="") {
 								reg `depvar' `dyn_reglist`indepidx'' `ctrl' if `touse', absorb(`: word 1 of `xtp'')
-								estimates store y`depidx'_x`indepidx'
+								estimates store y`depidx'_x`indepidx'`stosuf'
 							}
 							else {
 								eststo: xtreg `depvar' `dyn_reglist`indepidx'' `ctrl' if `touse', `xteffect' vce(`cse')
@@ -425,7 +431,7 @@ program regx
 						else {
 							if ("`chistore'"!="") {
 								reg `depvar' `indepvar' `ctrl' if `touse', absorb(`: word 1 of `xtp'')
-								estimates store y`depidx'_x`indepidx'
+								estimates store y`depidx'_x`indepidx'`stosuf'
 							}
 							else {
 								eststo: xtreg `depvar' `indepvar' `ctrl' if `touse', `xteffect' vce(`cse')
@@ -447,7 +453,7 @@ program regx
 					if ("`inte'"!="") {
 						if ("`chistore'"!="") {
 							reg `depvar' `inte_reglist`indepidx'' `ctrl' `cate_absr' if `touse'
-							estimates store y`depidx'_x`indepidx'
+							estimates store y`depidx'_x`indepidx'`stosuf'
 						}
 						else {
 							/* Interaction model */
@@ -458,7 +464,7 @@ program regx
 						if ("`dyn'"!="") {
 							if ("`chistore'"!="") {
 								reg `depvar' `dyn_reglist`indepidx'' `ctrl' `cate_absr' if `touse'
-								estimates store y`depidx'_x`indepidx'
+								estimates store y`depidx'_x`indepidx'`stosuf'
 							}
 							else {
 								/* dynamic effect model & plot */
@@ -482,7 +488,7 @@ program regx
 						else {
 							if ("`chistore'"!="") {
 								reg `depvar' `indepvar' `ctrl' `cate_absr' if `touse'
-								estimates store y`depidx'_x`indepidx'
+								estimates store y`depidx'_x`indepidx'`stosuf'
 							}
 							else {
 								/* standard model with FEs absorbed */
@@ -503,7 +509,7 @@ program regx
 					if ("`inte'"!="") {
 						if ("`chistore'"!="") {
 							reg `depvar' `inte_reglist`indepidx'' `ctrl' if `touse'
-							estimates store y`depidx'_x`indepidx'
+							estimates store y`depidx'_x`indepidx'`stosuf'
 						}
 						else {
 							eststo: reg `depvar' `inte_reglist`indepidx'' `ctrl' if `touse', vce(`cse')
@@ -513,7 +519,7 @@ program regx
 						if ("`dyn'"!="") {
 							if ("`chistore'"!="") {
 								reg `depvar' `dyn_reglist`indepidx'' `ctrl' if `touse'
-								estimates store y`depidx'_x`indepidx'
+								estimates store y`depidx'_x`indepidx'`stosuf'
 							}
 							else {
 								eststo: reg `depvar' `dyn_reglist`indepidx'' `ctrl' if `touse', vce(`cse')
@@ -536,7 +542,7 @@ program regx
 						else {
 							if ("`chistore'"!="") {
 								reg `depvar' `indepvar' `ctrl' if `touse'
-								estimates store y`depidx'_x`indepidx'
+								estimates store y`depidx'_x`indepidx'`stosuf'
 							}
 							else {
 								eststo: reg `depvar' `indepvar' `ctrl' if `touse', vce(`cse')
@@ -629,7 +635,7 @@ program regx
 				/* keep selected variables */
 				esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
 				drop(`drop_ctrl') stats(N r2_a, labels("Observations" "Adjusted R-squared")) rename(_cons "Constant") ///
-				order(`var_order') mtitles(`colname') title("`table_title'") note("`table_note'")				
+				order(`var_order') mtitles(`colname') title("`table_title'") note("`table_note'")			
 			}
 			else {
 				/* drop control */
@@ -644,4 +650,294 @@ program regx
 	
 end
 
+///=============================================================================
+/* eqx -> Chi-square coefficient equality test
+ * Within model test
+ * Between model test
+ */
+///=============================================================================
+
+capture program drop eqx
+program eqx
+
+	syntax anything [if] [in] , indep(namelist) eqt(string) [ctrl(string) absr(string) xtp(string) ///
+	inte(string) clust(namelist) dyn(string) ///
+	tnote(string) ttitle(string) addn(string) edir(string) REPORT EXPORT]
+	
+	/* restore arguments for regx */
+	local fullopt_args = ""
+	foreach opt in ctrl absr xtp inte clust dyn tnote ttitle edir report {
+		if ("``opt''"!="") {
+			local `opt'_arg = "`opt'(``opt'')"
+			local fullopt_args = "`fullopt_args' ``opt'_arg'"
+		}
+	}
+	
+	local deplen : word count `anything'
+	local indeplen : word count `indep'
+	local colidxs = `deplen' * `indeplen'
+	
+	/* (1) If cluster is specified */
+	if ("`clust'"!="") {
+		local cse = "cl `clust'"
+	}
+	else {
+		/* (2) If panel is claimed & no cluster specified, cluster SE at id level */
+		if ("`xtp'"!="") {
+			local cse = "cl `: word 1 of `xtp''"
+		}
+		else {
+			/* (3) If both panel and cluster are not specified */
+			if ("${clustervar}"!="") {
+				local cse = "cl ${clustervar}"
+			}
+			else {
+				local cse = "robust"
+				local extra_addn = "[No cluster SE specified]"
+			}
+		}
+	}
+	/* Default export file: ${dir_table_flow} */
+	/* Export file priority: `edir' > ${dir_table_flow} */
+	if (`"`edir'"'!="") {
+		local exportfile = "`edir'"
+	}
+	else {
+		if ("${dir_table_flow}"=="") {
+			di "[ERROR] Need to set a directory in [edir] or global ${dir_table_flow}"
+			exit
+		}
+		else {
+			local exportfile = "${dir_table_flow}"
+		}
+	}
+	
+	/* Situation 1: comparing the coefficients of two variables */
+	if (strpos("`eqt'", "==") & !strpos("`eqt'", "|")) {
+		local eqvlist : subinstr local eqt " " "", all
+		local eqvlist : subinstr local eqvlist "==" " ", all
+		local lhsvar : word 1 of `eqvlist'
+		local rhsvar : word 2 of `eqvlist'
+		
+		/* export the results at the same time */
+		if ("`export'"!="") {
+			regx `anything', indep(`indep') `fullopt_args' keepvar(`lhsvar' `rhsvar')
+		}
+	
+		/* estimates store results */
+		quietly: regx `anything', indep(`indep') `fullopt_args' display chistore
+		
+		local cellnames = ""
+		local sigidx = 0
+		local colidx = 1
+		forval depidx = 1/`deplen' {
+			forval indepidx = 1/`indeplen' {
+				matrix c`colidx' = J(1, 3, 0)
+				matrix colnames c`colidx' = "Chi-sq" "P-value" "Sig(0/*/**/***)"
+				
+				quietly: suest y`depidx'_x`indepidx', vce(`cse')
+				test [mean]`lhsvar' = [mean]`rhsvar'
+				
+				matrix c`colidx'[1, 1] = r(chi2)
+				matrix c`colidx'[1, 2] = r(p)
+				if (r(p)<=0.01) {
+					local sigstar = 3.3333
+					local sigidx = `sigidx' + 1
+				}
+				else if (r(p)>0.01 & r(p)<=0.05) {
+					local sigstar = 2.2222
+					local sigidx = `sigidx' + 1
+				}
+				else if (r(p)>0.05 & r(p)<=0.1) {
+					local sigstar = 1.1111
+					local sigidx = `sigidx' + 1
+				}
+				else {
+					local sigstar = 0.0000
+				}
+				matrix c`colidx'[1, 3] = `sigstar'
+				
+				local cellnames = "`cellnames' c`colidx'(fmt(%9.4f))"
+				local colidx = `colidx' + 1
+			}
+		}
+		
+		forval colidx = 1/`colidxs' {
+			estadd matrix c`colidx'
+		}
+		esttab using "`exportfile'", cells("`cellnames'") append nolines not se compress nogaps noobs plain ///
+		star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`lhsvar']==[`rhsvar'] `extra_addn'") ///
+		mtitle("[`sigidx' out of `colidxs' columns have significant difference]")
+	}
+	/* Situation 2: comparing the coefficients of independent variables between subsamples */
+	else if (strpos("`eqt'", "|") & !strpos("`eqt'", "==")) {
+		local eqvlist : subinstr local eqt " " "", all
+		local eqvlist : subinstr local eqvlist "|" " ", all
+		local eqtvar : word 1 of `eqvlist'
+		local subsvar : word 2 of `eqvlist'
+		levelsof `subsvar', local(subsvar_list)
+		
+		local subvidx = 1
+		foreach subv in `subsvar_list' {
+			local numeric_value = real("`subv'")
+			/* export tables */
+			if ("`export'"!="") {
+				if !missing(`numeric_value') {
+					regx `anything' if `subsvar'==`subv', indep(`indep') `fullopt_args' addn("[`subsvar'==`subv']")
+				}
+				else {
+					regx `anything' if `subsvar'=="`subv'", indep(`indep') `fullopt_args' addn("[`subsvar'==`subv']")
+				}
+			}
+			
+			/* estimates store results */
+			if !missing(`numeric_value') {
+				quietly: regx `anything' if `subsvar'==`subv', indep(`indep') `fullopt_args' stosuf("_s`subvidx'") display chistore
+			}
+			else {
+				quietly: regx `anything' if `subsvar'=="`subv'", indep(`indep') `fullopt_args' stosuf("_s`subvidx'") display chistore
+			}
+			mata: st_local("_kw_`subv'", "`subvidx'")
+			local subvidx = `subvidx' + 1
+		}
+		
+		/* subsample combination */
+		local pair_subs = ""
+		local len_subsvar : word count `subsvar_list'
+		local len_subsvarm = `len_subsvar' - 1
+		local subvi = 1
+		
+		forval subvi = 1/`len_subsvarm' {
+			local subvi_next = `subvi' + 1
+			forval subvj = `subvi_next'/`len_subsvar' {
+				local pair_subs = "`pair_subs' `: word `subvi' of `subsvar_list''&`: word `subvj' of `subsvar_list''"
+			}
+		}
+		/* for each indepvar */
+		if ("`eqtvar'"=="~") {
+			/* (1) each indepvar * first word of interaction */
+			if ("`inte'"!="") {
+				local first_inte : word 1 of `inte'
+				local first_inte : subinstr local first_inte "#" "#c.", all
+				forval indepidx = 1/`indeplen' {
+					local eqs_var_x`indepidx' = "c.`: word `indepidx' of `indep''#c.`first_inte'"
+				}
+			}
+			/* (2) each indepvar alone */
+			else {
+				forval indepidx = 1/`indeplen' {
+					local eqs_var_x`indepidx' = "`: word `indepidx' of `indep''"
+				}				
+			}
+			/* comparing each pair of categories */
+			foreach pairsub in `pair_subs' {
+				local subsvar_grp : subinstr local pairsub "&" " ", all
+				local prsub1 : word 1 of `subsvar_grp'
+				local prsub2 : word 2 of `subsvar_grp'
+				
+				local cellnames = ""
+				local sigidx = 0
+				local colidx = 1
+				forval depidx = 1/`deplen' {
+					forval indepidx = 1/`indeplen' {
+						local eqs_var = "c.`: word `indepidx' of `indep''#c.`first_inte'"
+						
+						matrix c`colidx' = J(1, 3, 0)
+						matrix colnames c`colidx' = "Chi-sq" "P-value" "Sig(0/*/**/***)"
+						
+						quietly: suest y`depidx'_x`indepidx'_s`_kw_`prsub1'' y`depidx'_x`indepidx'_s`_kw_`prsub2'', vce(`cse')
+						test [y`depidx'_x`indepidx'_s`_kw_`prsub1''_mean]`eqs_var_x`indepidx'' = [y`depidx'_x`indepidx'_s`_kw_`prsub2''_mean]`eqs_var_x`indepidx''
+						
+						matrix c`colidx'[1, 1] = r(chi2)
+						matrix c`colidx'[1, 2] = r(p)
+						if (r(p)<=0.01) {
+							local sigstar = 3.3333
+							local sigidx = `sigidx' + 1
+						}
+						else if (r(p)>0.01 & r(p)<=0.05) {
+							local sigstar = 2.2222
+							local sigidx = `sigidx' + 1
+						}
+						else if (r(p)>0.05 & r(p)<=0.1) {
+							local sigstar = 1.1111
+							local sigidx = `sigidx' + 1
+						}
+						else {
+							local sigstar = 0.0000
+						}
+						matrix c`colidx'[1, 3] = `sigstar'
+						
+						local cellnames = "`cellnames' c`colidx'(fmt(%9.4f))"
+						local colidx = `colidx' + 1		
+					}
+				}
+				forval colidx = 1/`colidxs' {
+					estadd matrix c`colidx'
+				}
+				esttab using "`exportfile'", cells("`cellnames'") append nolines not se compress nogaps noobs plain ///
+				star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`eqs_var_x`indeplen''], `subsvar' [=`prsub1'] vs [=`prsub2'] `extra_addn'") ///
+				mtitle("[`sigidx' out of `colidxs' columns have significant difference]")
+			}
+		}
+		/* for a fixed indepvar */
+		else if ("`eqtvar'"!="~" & "`eqtvar'"!="" & `: word count `eqtvar''==1) {
+			/* comparing each pair of categories */
+			foreach pairsub in `pair_subs' {
+				local subsvar_grp : subinstr local pairsub "&" " ", all
+				local prsub1 : word 1 of `subsvar_grp'
+				local prsub2 : word 2 of `subsvar_grp'
+				
+				local cellnames = ""
+				local sigidx = 0
+				local colidx = 1
+				forval depidx = 1/`deplen' {
+					forval indepidx = 1/`indeplen' {
+						local eqs_var = "c.`: word `indepidx' of `indep''#c.`first_inte'"
+						
+						matrix c`colidx' = J(1, 3, 0)
+						matrix colnames c`colidx' = "Chi-sq" "P-value" "Sig(0/*/**/***)"
+						
+						quietly: suest y`depidx'_x`indepidx'_s`_kw_`prsub1'' y`depidx'_x`indepidx'_s`_kw_`prsub2'', vce(`cse')
+						test [y`depidx'_x`indepidx'_s`_kw_`prsub1''_mean]`eqtvar' = [y`depidx'_x`indepidx'_s`_kw_`prsub2''_mean]`eqtvar'
+						
+						matrix c`colidx'[1, 1] = r(chi2)
+						matrix c`colidx'[1, 2] = r(p)
+						if (r(p)<=0.01) {
+							local sigstar = 3.3333
+							local sigidx = `sigidx' + 1
+						}
+						else if (r(p)>0.01 & r(p)<=0.05) {
+							local sigstar = 2.2222
+							local sigidx = `sigidx' + 1
+						}
+						else if (r(p)>0.05 & r(p)<=0.1) {
+							local sigstar = 1.1111
+							local sigidx = `sigidx' + 1
+						}
+						else {
+							local sigstar = 0.0000
+						}
+						matrix c`colidx'[1, 3] = `sigstar'
+						
+						local cellnames = "`cellnames' c`colidx'(fmt(%9.4f))"
+						local colidx = `colidx' + 1		
+					}
+				}
+				forval colidx = 1/`colidxs' {
+					estadd matrix c`colidx'
+				}
+				esttab using "`exportfile'", cells("`cellnames'") append nolines not se compress nogaps noobs plain ///
+				star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`eqtvar'], `subsvar' [=`prsub1'] vs [=`prsub2'] `extra_addn'") ///
+				mtitle("[`sigidx' out of `colidxs' columns have significant difference]")
+			}
+		}
+	}
+	else {
+		di "[ERROR] Wrong input"
+		exit
+	}
+
+	ereturn clear
+	estimates clear
+end
 

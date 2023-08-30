@@ -65,7 +65,7 @@ capture program drop regx
 program regx
 
 	syntax anything [if] [in] , indep(namelist) [ctrl(string) absr(string) xtp(string) ///
-	inte(string) clust(namelist) dyn(string) ///
+	inte(string) clust(namelist) dyn(string) tobit(string) ///
 	tnote(string) ttitle(string) addn(string) edir(string) keepvar(string) stosuf(string) REPORT DISPLAY CHISTORE]
 	
 	marksample touse
@@ -98,6 +98,30 @@ program regx
 			local cate_absr = ""
 			foreach absrvar in `absr' {
 				local cate_absr = "`cate_absr' i.`absrvar'"
+			}
+		}
+	}
+	
+	/* Tobit model: cannot use [absr] */
+	if ("`tobit'"!="") {
+		if ("`absr'"!="" | "`xtp'"!="") {
+			di "[ERROR] [tobit] cannot be used with [xtp] or [absr]"
+			exit
+		}
+		else {
+			local tobit_list : subinstr local tobit " " "", all
+			local tobit_list : subinstr local tobit_list "," " ", all
+			
+			local tobit_bound = ""
+			foreach tobit_i in `tobit_list' {
+				if (strpos("`tobit_i'", "ll=")>0) {
+					local tobit_add : subinstr local tobit_i "ll=" "", all
+					local tobit_bound = "`tobit_bound' ll(`tobit_add')"
+				}
+				if (strpos("`tobit_i'", "ul=")>0) {
+					local tobit_add : subinstr local tobit_i "ul=" "", all
+					local tobit_bound = "`tobit_bound' ul(`tobit_add')"
+				}
 			}
 		}
 	}
@@ -513,7 +537,12 @@ program regx
 							estimates store y`depidx'_x`indepidx'`stosuf'
 						}
 						else {
-							eststo: reg `depvar' `inte_reglist`indepidx'' `ctrl' if `touse', vce(`cse')
+							if ("`tobit'"!="") {
+								eststo: tobit `depvar' `inte_reglist`indepidx'' `ctrl' if `touse', `tobit_bound' vce(`cse')
+							}
+							else {
+								eststo: reg `depvar' `inte_reglist`indepidx'' `ctrl' if `touse', vce(`cse')
+							}
 						}
 					}
 					else {
@@ -523,10 +552,20 @@ program regx
 								estimates store y`depidx'_x`indepidx'`stosuf'
 							}
 							else {
-								eststo: reg `depvar' `dyn_reglist`indepidx'' `ctrl' if `touse', vce(`cse')
+								if ("`tobit'"!="") {
+									eststo: tobit `depvar' `dyn_reglist`indepidx'' `ctrl' if `touse', `tobit_bound' vce(`cse')
+								}
+								else {
+									eststo: reg `depvar' `dyn_reglist`indepidx'' `ctrl' if `touse', vce(`cse')
+								}
 								if (`if_dyn_plot'==1) {
 									quietly {
-										reg `depvar' `dyn_plotlist`indepidx'' `ctrl' if `touse', vce(`cse')
+										if ("`tobit'"!="") {
+											tobit `depvar' `dyn_plotlist`indepidx'' `ctrl' if `touse', `tobit_bound' vce(`cse')
+										}
+										else {
+											reg `depvar' `dyn_plotlist`indepidx'' `ctrl' if `touse', vce(`cse')
+										}
 										coefplot, keep(c.*#c.*) vertical omitted base levels(`dyn_ci') ///
 										rename(`"`dyn_rename'"', regex) order(`"`dyn_reorder'"') ///
 										mcolor("0 191 255") ciopts(lcolor("0 97 154") recast(rcap)) ///
@@ -546,7 +585,12 @@ program regx
 								estimates store y`depidx'_x`indepidx'`stosuf'
 							}
 							else {
-								eststo: reg `depvar' `indepvar' `ctrl' if `touse', vce(`cse')
+								if ("`tobit'"!="") {
+									eststo: tobit `depvar' `indepvar' `ctrl' if `touse', `tobit_bound' vce(`cse')
+								}
+								else {
+									eststo: reg `depvar' `indepvar' `ctrl' if `touse', vce(`cse')
+								}
 							}
 						}
 					}
@@ -620,12 +664,18 @@ program regx
 		else {
 			local table_note = "`tnote'"
 		}
-				
+		
+		/* (5) Additional labels: `add_stat' `add_label' */
+		if ("`tobit'"!="") {
+			local add_stat = "N_rc N_unc N_lc"
+			local add_label = `" "R Censored" "Uncensored" "L Censored""'
+		}
+		
 		/* If export full variable reports */
 		if ("`report'"!="") {
 			/* no drop */
 			esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
-			stats(N r2_a, labels("Observations" "Adjusted R-squared")) rename(_cons "Constant") ///
+			stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label')) rename(_cons "Constant") ///
 			order(`var_order' `ctrl' "Constant") mtitles(`colname') title("`table_title'") note("`table_note'")
 		}
 		else {
@@ -635,13 +685,13 @@ program regx
 				}
 				/* keep selected variables */
 				esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
-				drop(`drop_ctrl') stats(N r2_a, labels("Observations" "Adjusted R-squared")) rename(_cons "Constant") ///
+				drop(`drop_ctrl') stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label')) rename(_cons "Constant") ///
 				order(`var_order' `keepvar' "Constant") mtitles(`colname') title("`table_title'") note("`table_note'")			
 			}
 			else {
 				/* drop control */
 				esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
-				drop(`drop_ctrl') stats(N r2_a, labels("Observations" "Adjusted R-squared")) rename(_cons "Constant") ///
+				drop(`drop_ctrl') stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label')) rename(_cons "Constant") ///
 				order(`var_order' "Constant") mtitles(`colname') title("`table_title'") note("`table_note'")
 			}
 		}

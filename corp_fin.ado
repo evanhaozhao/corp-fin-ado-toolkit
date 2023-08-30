@@ -563,11 +563,11 @@ program regx
 		/* Question: how many indep vars? How many columns? */
 		/* (1) Order */
 		if ("`inte'"!="") {
-			local var_order = "`indep' `orderinte' c.* Constant"
+			local var_order = "`indep' `orderinte' c.*"
 		}
 		else {
 			if ("`dyn'"!="") {
-				local var_order = "`indep' `orderinte' Constant"
+				local var_order = "`indep' `orderinte'"
 			}
 			local var_order = "`indep'"
 		}
@@ -626,7 +626,7 @@ program regx
 			/* no drop */
 			esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
 			stats(N r2_a, labels("Observations" "Adjusted R-squared")) rename(_cons "Constant") ///
-			order(`var_order') mtitles(`colname') title("`table_title'") note("`table_note'")
+			order(`var_order' `ctrl' "Constant") mtitles(`colname') title("`table_title'") note("`table_note'")
 		}
 		else {
 			if ("`keepvar'"!="") {
@@ -636,13 +636,13 @@ program regx
 				/* keep selected variables */
 				esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
 				drop(`drop_ctrl') stats(N r2_a, labels("Observations" "Adjusted R-squared")) rename(_cons "Constant") ///
-				order(`var_order') mtitles(`colname') title("`table_title'") note("`table_note'")			
+				order(`var_order' `keepvar' "Constant") mtitles(`colname') title("`table_title'") note("`table_note'")			
 			}
 			else {
 				/* drop control */
 				esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
 				drop(`drop_ctrl') stats(N r2_a, labels("Observations" "Adjusted R-squared")) rename(_cons "Constant") ///
-				order(`var_order') mtitles(`colname') title("`table_title'") note("`table_note'")
+				order(`var_order' "Constant") mtitles(`colname') title("`table_title'") note("`table_note'")
 			}
 		}
 	}

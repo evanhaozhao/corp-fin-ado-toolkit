@@ -667,8 +667,8 @@ program regx
 		
 		/* (5) Additional labels: `add_stat' `add_label' */
 		if ("`tobit'"!="") {
-			local add_stat = "N_rc N_unc N_lc"
-			local add_label = `" "R Censored" "Uncensored" "L Censored""'
+			local add_stat = "N_lc N_unc N_rc"
+			local add_label = `" "L Censored" "Uncensored" "R Censored""'
 		}
 		
 		/* If export full variable reports */

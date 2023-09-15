@@ -715,6 +715,8 @@ program eqx
 	inte(string) clust(namelist) dyn(string) ///
 	tnote(string) ttitle(string) addn(string) edir(string) REPORT EXPORT]
 	
+	marksample touse
+	
 	/* restore arguments for regx */
 	local fullopt_args = ""
 	foreach opt in ctrl absr xtp inte clust dyn tnote ttitle edir report {
@@ -772,11 +774,11 @@ program eqx
 		
 		/* export the results at the same time */
 		if ("`export'"!="") {
-			regx `anything', indep(`indep') `fullopt_args' keepvar(`lhsvar' `rhsvar')
+			regx `anything' if `touse', indep(`indep') `fullopt_args' keepvar(`lhsvar' `rhsvar')
 		}
 	
 		/* estimates store results */
-		quietly: regx `anything', indep(`indep') `fullopt_args' display chistore
+		quietly: regx `anything' if `touse', indep(`indep') `fullopt_args' display chistore
 		
 		local cellnames = ""
 		local sigidx = 0
@@ -834,19 +836,19 @@ program eqx
 			/* export tables */
 			if ("`export'"!="") {
 				if !missing(`numeric_value') {
-					regx `anything' if `subsvar'==`subv', indep(`indep') `fullopt_args' addn("[`subsvar'==`subv']")
+					regx `anything' if `subsvar'==`subv' & `touse', indep(`indep') `fullopt_args' addn("[`subsvar'==`subv']")
 				}
 				else {
-					regx `anything' if `subsvar'=="`subv'", indep(`indep') `fullopt_args' addn("[`subsvar'==`subv']")
+					regx `anything' if `subsvar'=="`subv'" & `touse', indep(`indep') `fullopt_args' addn("[`subsvar'==`subv']")
 				}
 			}
 			
 			/* estimates store results */
 			if !missing(`numeric_value') {
-				quietly: regx `anything' if `subsvar'==`subv', indep(`indep') `fullopt_args' stosuf("_s`subvidx'") display chistore
+				quietly: regx `anything' if `subsvar'==`subv' & `touse', indep(`indep') `fullopt_args' stosuf("_s`subvidx'") display chistore
 			}
 			else {
-				quietly: regx `anything' if `subsvar'=="`subv'", indep(`indep') `fullopt_args' stosuf("_s`subvidx'") display chistore
+				quietly: regx `anything' if `subsvar'=="`subv'" & `touse', indep(`indep') `fullopt_args' stosuf("_s`subvidx'") display chistore
 			}
 			mata: st_local("_kw_`subv'", "`subvidx'")
 			local subvidx = `subvidx' + 1

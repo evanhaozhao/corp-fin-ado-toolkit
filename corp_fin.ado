@@ -3,45 +3,8 @@
  * Project: Programs for corporate finance empirical studies
  * Author: Hao Zhao
  * Created: August 19, 2023
- * Modified: August 30, 2023
+ * Modified: October 10, 2023
  */
-///=============================================================================
-/* cnt -> */
-capture program drop cnt
-program cnt, rclass
-
-	syntax namelist [if] [in] , [srt(namelist)]
-	
-	local unique_define "`namelist'"
-	marksample touse
-	
-	tempvar _total_num _count_num _item_ones _total_ones
-	
-	qui gen `_count_num' = 1 if `touse'
-	qui bys `unique_define' `_count_num': replace `_count_num' = . if _n!=1
-	qui egen `_total_num' = sum(`_count_num') 
-	qui bys `unique_define': gen `_item_ones' = _n if `touse'
-	qui egen `_total_ones' = sum(`_item_ones') 
-	
-	qui summ `_total_num'
-	local count_result = r(mean)
-	di "The number is " `count_result'
-	
-	qui summ `_total_ones'
-	local count_result2 = r(mean)
-	if `count_result'==`count_result2' {
-		di "Unique group"
-	}
-	else {
-		di "Not unique group"
-	}
-	
-	if "`srt'"!= "" {
-		sort `srt'
-	}
-	return scalar count = `count_result'
-end
-
 ///=============================================================================
 /* regx -> regression to output tables 
 

@@ -3,7 +3,7 @@
  * Project: Programs for corporate finance empirical studies
  * Author: Hao Zhao
  * Created: August 19, 2023
- * Modified: October 10, 2023
+ * Modified: January 8, 2024
  */
 ///=============================================================================
 /* regx -> regression to output tables 
@@ -666,8 +666,9 @@ end
 
 ///=============================================================================
 /* eqx -> Chi-square coefficient equality test
- * Within model test
- * Between model test
+ * Within model test: eqx y, ... eqt(x1==x2)
+ * Between category test (models separated by a categorical variable): (1) eqx y, ... eqt(x | dummy), (2) eqx y, ... eqt(~ | dummy)
+ * Between model test (models separated by two sets of dependent variables): (1) eqx y1, ... eqt(x @) dep2(y2), (2) eqx y1, ... eqt(~ @) dep2(y2)
  */
 ///=============================================================================
 
@@ -675,7 +676,7 @@ capture program drop eqx
 program eqx
 
 	syntax anything [if] [in] , indep(namelist) eqt(string) [ctrl(string) absr(string) xtp(string) ///
-	inte(string) clust(namelist) dyn(string) ///
+	inte(string) clust(namelist) dyn(string) dep2(string) ///
 	tnote(string) ttitle(string) addn(string) edir(string) REPORT EXPORT]
 	
 	marksample touse
@@ -948,6 +949,128 @@ program eqx
 			}
 		}
 	}
+	/* Situation 3: comparing the coefficients of independent variables between regressions with different dependent variables */
+    else if (strpos("`eqt'", "@") & "`dep2'"!="" & `deplen'==`: word count `dep2'') {
+        local eqvlist : subinstr local eqt " " "", all
+		local eqvlist : subinstr local eqvlist "@" " ", all
+        local eqtvar : word 1 of `eqvlist'
+
+        /* export the results at the same time */
+        if ("`export'"!="") {
+			regx `anything' if `touse', indep(`indep') `fullopt_args' keepvar(`eqtvar')
+            regx `dep2' if `touse', indep(`indep') `fullopt_args' keepvar(`eqtvar')
+		}
+
+        /* estimates store results */
+        quietly: regx `anything' if `touse', indep(`indep') `fullopt_args' stosuf("_s1") display chistore
+        quietly: regx `dep2' if `touse', indep(`indep') `fullopt_args' stosuf("_s2") display chistore
+
+        /* for each indepvar */
+        if ("`eqtvar'"=="~") {
+			/* (1) each indepvar * first word of interaction */
+			if ("`inte'"!="") {
+				local first_inte : word 1 of `inte'
+				local first_inte : subinstr local first_inte "#" "#c.", all
+				forval indepidx = 1/`indeplen' {
+					local eqs_var_x`indepidx' = "c.`: word `indepidx' of `indep''#c.`first_inte'"
+				}
+			}
+			/* (2) each indepvar alone */
+			else {
+				forval indepidx = 1/`indeplen' {
+					local eqs_var_x`indepidx' = "`: word `indepidx' of `indep''"
+				}				
+			}
+            local cellnames = ""
+            local sigidx = 0
+            local colidx = 1
+            forval depidx = 1/`deplen' {
+                forval indepidx = 1/`indeplen' {
+                    local eqs_var = "c.`: word `indepidx' of `indep''#c.`first_inte'"
+
+                    matrix c`colidx' = J(1, 3, 0)
+                    matrix colnames c`colidx' = "Chi-sq" "P-value" "Sig(0/*/**/***)"
+
+                    quietly: suest y`depidx'_x`indepidx'_s1 y`depidx'_x`indepidx'_s2, vce(`cse')
+                    test [y`depidx'_x`indepidx'_s1_mean]`eqs_var_x`indepidx'' = [y`depidx'_x`indepidx'_s2_mean]`eqs_var_x`indepidx''
+
+                    matrix c`colidx'[1, 1] = r(chi2)
+                    matrix c`colidx'[1, 2] = r(p)
+
+                    if (r(p)<=0.01) {
+                        local sigstar = 3.3333
+                        local sigidx = `sigidx' + 1
+                    }
+                    else if (r(p)>0.01 & r(p)<=0.05) {
+                        local sigstar = 2.2222
+                        local sigidx = `sigidx' + 1
+                    }
+                    else if (r(p)>0.05 & r(p)<=0.1) {
+                        local sigstar = 1.1111
+                        local sigidx = `sigidx' + 1
+                    }
+                    else {
+                        local sigstar = 0.0000
+                    }
+                    matrix c`colidx'[1, 3] = `sigstar'
+                    
+                    local cellnames = "`cellnames' c`colidx'(fmt(%9.4f))"
+                    local colidx = `colidx' + 1		
+                }
+            }
+            forval colidx = 1/`colidxs' {
+                estadd matrix c`colidx'
+            }
+            esttab using "`exportfile'", cells("`cellnames'") append nolines not se compress nogaps noobs plain ///
+            star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`eqs_var_x`indeplen''], Dep Var [=`: word 1 of `anything''] vs [=`: word 1 of `dep2''] `extra_addn'") ///
+            mtitle("[`sigidx' out of `colidxs' columns have significant difference]")
+        }
+        else if ("`eqtvar'"!="~" & "`eqtvar'"!="" & `: word count `eqtvar''==1) {
+            local cellnames = ""
+            local sigidx = 0
+            local colidx = 1
+            forval depidx = 1/`deplen' {
+                forval indepidx = 1/`indeplen' {
+                    local eqs_var = "c.`: word `indepidx' of `indep''#c.`first_inte'"
+
+                    matrix c`colidx' = J(1, 3, 0)
+                    matrix colnames c`colidx' = "Chi-sq" "P-value" "Sig(0/*/**/***)"
+
+                    quietly: suest y`depidx'_x`indepidx'_s1 y`depidx'_x`indepidx'_s2, vce(`cse')
+                    test [y`depidx'_x`indepidx'_s1_mean]`eqtvar' = [y`depidx'_x`indepidx'_s2_mean]`eqtvar'
+
+                    matrix c`colidx'[1, 1] = r(chi2)
+                    matrix c`colidx'[1, 2] = r(p)
+
+                    if (r(p)<=0.01) {
+                        local sigstar = 3.3333
+                        local sigidx = `sigidx' + 1
+                    }
+                    else if (r(p)>0.01 & r(p)<=0.05) {
+                        local sigstar = 2.2222
+                        local sigidx = `sigidx' + 1
+                    }
+                    else if (r(p)>0.05 & r(p)<=0.1) {
+                        local sigstar = 1.1111
+                        local sigidx = `sigidx' + 1
+                    }
+                    else {
+                        local sigstar = 0.0000
+                    }
+                    matrix c`colidx'[1, 3] = `sigstar'
+                    
+                    local cellnames = "`cellnames' c`colidx'(fmt(%9.4f))"
+                    local colidx = `colidx' + 1		
+                }
+            }
+            forval colidx = 1/`colidxs' {
+                estadd matrix c`colidx'
+            }
+            esttab using "`exportfile'", cells("`cellnames'") append nolines not se compress nogaps noobs plain ///
+            star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`eqtvar'], Dep Var [=`: word 1 of `anything''] vs [=`: word 1 of `dep2''] `extra_addn'") ///
+            mtitle("[`sigidx' out of `colidxs' columns have significant difference]")
+        }
+    }
 	else {
 		di "[ERROR] Wrong input"
 		exit

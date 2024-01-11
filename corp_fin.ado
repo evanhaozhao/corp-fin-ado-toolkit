@@ -25,11 +25,12 @@
  */
 ///=============================================================================
 capture program drop regx
-program regx
+program regx, rclass sortpreserve
 
 	syntax anything [if] [in] , indep(namelist) [ctrl(string) absr(string) xtp(string) ///
 	inte(string) clust(namelist) dyn(string) tobit(string) ///
-	tnote(string) ttitle(string) addn(string) edir(string) keepvar(string) stosuf(string) REPORT DISPLAY CHISTORE]
+	tnote(string) ttitle(string) addn(string) edir(string) keepvar(string) ///
+	stosuf(string) sigout(string) SIGMAT REPORT DISPLAY CHISTORE]
 	
 	marksample touse
 	
@@ -563,7 +564,7 @@ program regx
 			}
 		}
 	}
-	
+		
 	/* Store results */
 	if ("`display'"=="") {
 	
@@ -659,9 +660,139 @@ program regx
 			}
 		}
 	}
-	
+		
+	/* Summarize coefficient matrix */
+	if ("`sigmat'"!="" | "`sigout'"!="") {
+		quietly: esttab
+		matrix A = r(coefs)
+		local deplen : word count `anything'
+		local indeplen : word count `indep'
+		
+		/* For defining the matrix width and colnames (using the first regression) */
+		local col_items_f = ""
+		forval depidx = 1/1 {
+			forval indepidx = 1/1 {
+				if ("`inte'"!="") {
+					local col_items_f = "`inte_reglist`indepidx'' `keepvar'"
+				}
+				else {
+					if ("`dyn'"!="") {
+						local col_items_f = "`dyn_reglist`indepidx'' `keepvar'"
+					}
+					else {
+						local col_items_f = "`: word `indepidx' of `indep'' `keepvar'"
+					}
+				}
+				local sigmat_col_num : word count `col_items_f'
+				local sigmat_col_len = `sigmat_col_num' * 2
+			}
+		}
+		matrix B = J(1, `sigmat_col_len', 0)
+		local b_col_name = `""'
+		foreach col in `col_items_f' {
+			local b_col_name = `"`b_col_name' "`col'" "(sig)""'
+		}
+		matrix colnames B = `b_col_name'
+		
+		forval b_col_idx = 1/`sigmat_col_num' {
+			local overall_sign = 0
+			local overall_sig = 0
+			local c_sig_cnt = 0
+			local agg_sign = 0
+			local col_items = ""
+			forval depidx = 1/`deplen' {
+				local r_sig_cnt = 0
+				forval indepidx = 1/`indeplen' {
+					local yb_col = 3 * (`indepidx'-`indeplen'+`indeplen'*`depidx')-2
+					local yp_col = 3 * (`indepidx'-`indeplen'+`indeplen'*`depidx')
+					if ("`inte'"!="") {
+						local col_items = "`inte_reglist`indepidx'' `keepvar'"
+					}
+					else {
+						if ("`dyn'"!="") {
+							local col_items = "`dyn_reglist`indepidx'' `keepvar'"
+						}
+						else {
+							local col_items = "`: word `indepidx' of `indep'' `keepvar'"
+						}
+					}
+					local cell_word : word `b_col_idx' of `col_items'
+					local cell_coef = A["`cell_word'", `yb_col']
+					if (`cell_coef' < 0) {
+						local agg_sign = `agg_sign' - 1
+					}
+					else if (`cell_coef' > 0) {
+						local agg_sign = `agg_sign' + 1
+					}
+					local cell_sig_cnt = A["`cell_word'", `yp_col']
+					if (`cell_sig_cnt' <= 0.1) {
+						local r_sig_cnt = `r_sig_cnt' + 1
+					}
+				}
+				local c_sig_cnt = `c_sig_cnt' + `r_sig_cnt'/`indeplen'
+			}
+			if (`agg_sign' == `deplen'*`indeplen') {
+				local overall_sign = 1
+			}
+			else if (`agg_sign' == -1*`deplen'*`indeplen') {
+				local overall_sign = -1
+			}
+			else {
+				local overall_sign = 0
+			}
+			local c_sig_score = `c_sig_cnt'/`deplen'
+			if (`c_sig_score'<1/3) {
+				local overall_sig = 0
+			}
+			else if (`c_sig_score'>2/3) {
+				local overall_sig = 3
+			}
+			else {
+				local overall_sig = 2
+			}
+			matrix B[1, 2*`b_col_idx'-1] = `overall_sign'
+			matrix B[1, 2*`b_col_idx'] = `overall_sig'
+		}
+		
+		/* If export the significance summary into a file */
+ 		if ("`sigout'"!="") {
+ 			eststo clear
+ 			ereturn clear
+ 			estimates clear
+			
+ 			local sigsummaryfile : subinstr local exportfile ".csv" "_ss.csv", all
+ 			local sigsummaryfile : subinstr local sigsummaryfile ".rtf" "_ss.rtf", all
+
+			local cellname_li = ""
+			forval col_idx = 1/`sigmat_col_len' {
+				matrix B_`col_idx' = B[1, `col_idx']
+				matrix colnames B_`col_idx' = "model `sigout'"
+				estadd matrix B_`col_idx'
+				local cellname_li = "`cellname_li' B_`col_idx'(fmt(%9.0f))"
+			}
+			if (`sigout'==1) {
+				if ("`ttitle'"=="") {
+					local table_title = "Dep [`: word 1 of `anything''] ~ indep [`: word 1 of `indep''] `addn' `extra_addn'"
+				}
+				else {
+					local table_title = "`ttitle' `extra_addn'"
+				}
+				esttab using "`sigsummaryfile'", cells("`cellname_li'") ///
+				collabels(`b_col_name') mlabels(,none) eqlab(,none) title(`table_title') ///
+				append nolines not se compress nogaps noobs plain
+			}
+			else {
+				esttab using "`sigsummaryfile'", cells("`cellname_li'") ///
+				collabels(,none) mlabels(,none) eqlab(,none) ///
+				append nolines not se compress nogaps noobs plain
+			}
+ 		}
+		return matrix sigmat = B
+	}
+
 	eststo clear
-	
+	ereturn clear
+	estimates clear
 end
 
 ///=============================================================================
@@ -1079,4 +1210,3 @@ program eqx
 	ereturn clear
 	estimates clear
 end
-

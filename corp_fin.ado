@@ -770,7 +770,7 @@ program regx, rclass sortpreserve
 				estadd matrix B_`col_idx'
 				local cellname_li = "`cellname_li' B_`col_idx'(fmt(%9.0f))"
 			}
-			if (`sigout'==1) {
+			if (`sigout'==1 | "`sigout'"=="baseline") {
 				if ("`ttitle'"=="") {
 					local table_title = "Dep [`: word 1 of `anything''] ~ indep [`: word 1 of `indep''] `addn' `extra_addn'"
 				}

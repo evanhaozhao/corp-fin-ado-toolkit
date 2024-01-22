@@ -30,7 +30,7 @@ program regx, rclass sortpreserve
 	syntax anything [if] [in] , indep(namelist) [ctrl(string) absr(string) xtp(string) ///
 	inte(string) clust(namelist) dyn(string) tobit(string) ///
 	tnote(string) ttitle(string) addn(string) edir(string) keepvar(string) ///
-	stosuf(string) sigout(string) SIGMAT REPORT DISPLAY CHISTORE]
+	stosuf(string) sigout(string) sigkw(string) SIGMAT REPORT DISPLAY CHISTORE]
 	
 	marksample touse
 	
@@ -717,14 +717,24 @@ program regx, rclass sortpreserve
 						}
 					}
 					local cell_word : word `b_col_idx' of `col_items'
-					local cell_coef = A["`cell_word'", `yb_col']
+					if ("`tobit'"!="") {
+						local cell_coef = A[`b_col_idx', `yb_col']
+					}
+					else {
+						local cell_coef = A["`cell_word'", `yb_col']
+					}
 					if (`cell_coef' < 0) {
 						local agg_sign = `agg_sign' - 1
 					}
 					else if (`cell_coef' > 0) {
 						local agg_sign = `agg_sign' + 1
 					}
-					local cell_sig_cnt = A["`cell_word'", `yp_col']
+					if ("`tobit'"!="") {
+						local cell_sig_cnt = A[`b_col_idx', `yp_col']
+					}
+					else {
+						local cell_sig_cnt = A["`cell_word'", `yp_col']
+					}
 					if (`cell_sig_cnt' <= 0.1) {
 						local r_sig_cnt = `r_sig_cnt' + 1
 					}
@@ -770,7 +780,7 @@ program regx, rclass sortpreserve
 				estadd matrix B_`col_idx'
 				local cellname_li = "`cellname_li' B_`col_idx'(fmt(%9.0f))"
 			}
-			if ("`sigout'"=="1" | "`sigout'"=="baseline") {
+			if ("`sigout'"=="1" | "`sigout'"=="baseline" | "`sigout'"=="`sigkw'") {
 				if ("`ttitle'"=="") {
 					local table_title = "Dep [`: word 1 of `anything''] ~ indep [`: word 1 of `indep''] `addn' `extra_addn'"
 				}

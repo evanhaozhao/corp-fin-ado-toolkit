@@ -801,8 +801,7 @@ program regx, rclass sortpreserve
 	}
 
 	eststo clear
-	ereturn clear
-	estimates clear
+	
 end
 
 ///=============================================================================

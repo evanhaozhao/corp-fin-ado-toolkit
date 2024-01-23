@@ -3,7 +3,7 @@
  * Project: Programs for corporate finance empirical studies
  * Author: Hao Zhao
  * Created: August 19, 2023
- * Modified: January 8, 2024
+ * Modified: January 23, 2024
  */
 ///=============================================================================
 /* regx -> regression to output tables 
@@ -718,7 +718,7 @@ program regx, rclass sortpreserve
 					}
 					local cell_word : word `b_col_idx' of `col_items'
 					if ("`tobit'"!="") {
-						local cell_coef = A[`b_col_idx', `yb_col']
+						local cell_coef = A["main:`cell_word'", `yb_col']
 					}
 					else {
 						local cell_coef = A["`cell_word'", `yb_col']
@@ -730,7 +730,7 @@ program regx, rclass sortpreserve
 						local agg_sign = `agg_sign' + 1
 					}
 					if ("`tobit'"!="") {
-						local cell_sig_cnt = A[`b_col_idx', `yp_col']
+						local cell_sig_cnt = A["main:`cell_word'", `yp_col']
 					}
 					else {
 						local cell_sig_cnt = A["`cell_word'", `yp_col']

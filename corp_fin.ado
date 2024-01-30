@@ -252,7 +252,7 @@ program regx, rclass sortpreserve
 			local dynoption : subinstr local dyn " " "", all
 			local dynoption : subinstr local dynoption "," " ", all
 			
-			/* default setting: year: [-2, 2]; benchmark: [-2]; plot: no; CI: 95% */
+			/* default setting: year: [-2, 2]; benchmark: [0]; plot: no; CI: 95% */
 			local dyn_year = "-2/2"
 			local dyn_bench = "0"
 			local dyn_benchname = "t0"

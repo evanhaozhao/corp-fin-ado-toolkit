@@ -28,7 +28,7 @@ capture program drop regx
 program regx, rclass sortpreserve
 
 	syntax anything [if] [in] , indep(namelist) [ctrl(string) absr(string) xtp(string) ///
-	inte(string) clust(namelist) dyn(string) tobit(string) ///
+	inte(string) clust(namelist) dyn(string) rotctrl(string) tobit(string) ///
 	tnote(string) ttitle(string) addn(string) edir(string) keepvar(string) ///
 	stosuf(string) sigout(string) sigkw(string) SIGMAT REPORT DISPLAY CHISTORE]
 	
@@ -117,6 +117,13 @@ program regx, rclass sortpreserve
 	if ("`ctrl'"!="") {
 		/* drop if no "REPORT" specified */
 		local drop_ctrl: subinstr local ctrl "i." "*", all
+	}
+	/* Rotating control variables */
+	if ("`rotctrl'"!="") {
+		if (`: word count `rotctrl''!=`: word count `indep'') {
+			di "[ERROR] [rotctrl] number of rotating control vars must equal number of indep vars"
+			exit
+		}
 	}
 	
 	/* default ordering in tables */
@@ -386,24 +393,24 @@ program regx, rclass sortpreserve
 				foreach indepvar in `indep' {
 					if ("`inte'"!="") {
 						if ("`chistore'"!="") {
-							reg `depvar' `inte_reglist`indepidx'' `ctrl' if `touse', absorb(`: word 1 of `xtp'')
+							reg `depvar' `inte_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', absorb(`: word 1 of `xtp'')
 							estimates store y`depidx'_x`indepidx'`stosuf'
 						}
 						else {
-							eststo: xtreg `depvar' `inte_reglist`indepidx'' `ctrl' if `touse', `xteffect' vce(`cse')
+							eststo: xtreg `depvar' `inte_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', `xteffect' vce(`cse')
 						}
 					}
 					else {
 						if ("`dyn'"!="") {
 							if ("`chistore'"!="") {
-								reg `depvar' `dyn_reglist`indepidx'' `ctrl' if `touse', absorb(`: word 1 of `xtp'')
+								reg `depvar' `dyn_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', absorb(`: word 1 of `xtp'')
 								estimates store y`depidx'_x`indepidx'`stosuf'
 							}
 							else {
-								eststo: xtreg `depvar' `dyn_reglist`indepidx'' `ctrl' if `touse', `xteffect' vce(`cse')
+								eststo: xtreg `depvar' `dyn_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', `xteffect' vce(`cse')
 								if (`if_dyn_plot'==1) {
 									quietly {
-										xtreg `depvar' `dyn_plotlist`indepidx'' `ctrl' if `touse', `xteffect' vce(`cse')
+										xtreg `depvar' `dyn_plotlist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', `xteffect' vce(`cse')
 										coefplot, keep(c.*#c.*) vertical omitted base levels(`dyn_ci') ///
 										rename(`"`dyn_rename'"', regex) order(`"`dyn_reorder'"') ///
 										mcolor("0 191 255") ciopts(lcolor("0 97 154") recast(rcap)) ///
@@ -419,11 +426,11 @@ program regx, rclass sortpreserve
 						}
 						else {
 							if ("`chistore'"!="") {
-								reg `depvar' `indepvar' `ctrl' if `touse', absorb(`: word 1 of `xtp'')
+								reg `depvar' `indepvar' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', absorb(`: word 1 of `xtp'')
 								estimates store y`depidx'_x`indepidx'`stosuf'
 							}
 							else {
-								eststo: xtreg `depvar' `indepvar' `ctrl' if `touse', `xteffect' vce(`cse')
+								eststo: xtreg `depvar' `indepvar' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', `xteffect' vce(`cse')
 							}
 						}
 					}
@@ -441,26 +448,26 @@ program regx, rclass sortpreserve
 				foreach indepvar in `indep' {
 					if ("`inte'"!="") {
 						if ("`chistore'"!="") {
-							reg `depvar' `inte_reglist`indepidx'' `ctrl' `cate_absr' if `touse'
+							reg `depvar' `inte_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' `cate_absr' if `touse'
 							estimates store y`depidx'_x`indepidx'`stosuf'
 						}
 						else {
 							/* Interaction model */
-							eststo: reghdfe `depvar' `inte_reglist`indepidx'' `ctrl' if `touse', absorb(`absr') vce(`cse')
+							eststo: reghdfe `depvar' `inte_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', absorb(`absr') vce(`cse')
 						}
 					}
 					else {
 						if ("`dyn'"!="") {
 							if ("`chistore'"!="") {
-								reg `depvar' `dyn_reglist`indepidx'' `ctrl' `cate_absr' if `touse'
+								reg `depvar' `dyn_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' `cate_absr' if `touse'
 								estimates store y`depidx'_x`indepidx'`stosuf'
 							}
 							else {
 								/* dynamic effect model & plot */
-								eststo: reghdfe `depvar' `dyn_reglist`indepidx'' `ctrl' if `touse', absorb(`absr') vce(`cse')
+								eststo: reghdfe `depvar' `dyn_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', absorb(`absr') vce(`cse')
 								if (`if_dyn_plot'==1) {
 									quietly {
-										reghdfe `depvar' `dyn_plotlist`indepidx'' `ctrl' if `touse', absorb(`absr') vce(`cse')
+										reghdfe `depvar' `dyn_plotlist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', absorb(`absr') vce(`cse')
 										coefplot, keep(c.*#c.*) vertical omitted base levels(`dyn_ci') ///
 										rename(`dyn_rename', regex) order(`dyn_reorder') ///
 										mcolor("0 191 255") ciopts(lcolor("0 97 154") recast(rcap)) ///
@@ -476,12 +483,12 @@ program regx, rclass sortpreserve
 						}
 						else {
 							if ("`chistore'"!="") {
-								reg `depvar' `indepvar' `ctrl' `cate_absr' if `touse'
+								reg `depvar' `indepvar' `ctrl' `: word `indepidx' of `rotctrl'' `cate_absr' if `touse'
 								estimates store y`depidx'_x`indepidx'`stosuf'
 							}
 							else {
 								/* standard model with FEs absorbed */
-								eststo: reghdfe `depvar' `indepvar' `ctrl' if `touse', absorb(`absr') vce(`cse')
+								eststo: reghdfe `depvar' `indepvar' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', absorb(`absr') vce(`cse')
 							}
 						}
 					}
@@ -497,38 +504,38 @@ program regx, rclass sortpreserve
 				foreach indepvar in `indep' {
 					if ("`inte'"!="") {
 						if ("`chistore'"!="") {
-							reg `depvar' `inte_reglist`indepidx'' `ctrl' if `touse'
+							reg `depvar' `inte_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse'
 							estimates store y`depidx'_x`indepidx'`stosuf'
 						}
 						else {
 							if ("`tobit'"!="") {
-								eststo: tobit `depvar' `inte_reglist`indepidx'' `ctrl' if `touse', `tobit_bound' vce(`cse')
+								eststo: tobit `depvar' `inte_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', `tobit_bound' vce(`cse')
 							}
 							else {
-								eststo: reg `depvar' `inte_reglist`indepidx'' `ctrl' if `touse', vce(`cse')
+								eststo: reg `depvar' `inte_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', vce(`cse')
 							}
 						}
 					}
 					else {
 						if ("`dyn'"!="") {
 							if ("`chistore'"!="") {
-								reg `depvar' `dyn_reglist`indepidx'' `ctrl' if `touse'
+								reg `depvar' `dyn_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse'
 								estimates store y`depidx'_x`indepidx'`stosuf'
 							}
 							else {
 								if ("`tobit'"!="") {
-									eststo: tobit `depvar' `dyn_reglist`indepidx'' `ctrl' if `touse', `tobit_bound' vce(`cse')
+									eststo: tobit `depvar' `dyn_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', `tobit_bound' vce(`cse')
 								}
 								else {
-									eststo: reg `depvar' `dyn_reglist`indepidx'' `ctrl' if `touse', vce(`cse')
+									eststo: reg `depvar' `dyn_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', vce(`cse')
 								}
 								if (`if_dyn_plot'==1) {
 									quietly {
 										if ("`tobit'"!="") {
-											tobit `depvar' `dyn_plotlist`indepidx'' `ctrl' if `touse', `tobit_bound' vce(`cse')
+											tobit `depvar' `dyn_plotlist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', `tobit_bound' vce(`cse')
 										}
 										else {
-											reg `depvar' `dyn_plotlist`indepidx'' `ctrl' if `touse', vce(`cse')
+											reg `depvar' `dyn_plotlist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', vce(`cse')
 										}
 										coefplot, keep(c.*#c.*) vertical omitted base levels(`dyn_ci') ///
 										rename(`"`dyn_rename'"', regex) order(`"`dyn_reorder'"') ///
@@ -545,15 +552,15 @@ program regx, rclass sortpreserve
 						}
 						else {
 							if ("`chistore'"!="") {
-								reg `depvar' `indepvar' `ctrl' if `touse'
+								reg `depvar' `indepvar' `ctrl' `: word `indepidx' of `rotctrl'' if `touse'
 								estimates store y`depidx'_x`indepidx'`stosuf'
 							}
 							else {
 								if ("`tobit'"!="") {
-									eststo: tobit `depvar' `indepvar' `ctrl' if `touse', `tobit_bound' vce(`cse')
+									eststo: tobit `depvar' `indepvar' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', `tobit_bound' vce(`cse')
 								}
 								else {
-									eststo: reg `depvar' `indepvar' `ctrl' if `touse', vce(`cse')
+									eststo: reg `depvar' `indepvar' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', vce(`cse')
 								}
 							}
 						}
@@ -640,7 +647,7 @@ program regx, rclass sortpreserve
 			/* no drop */
 			esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
 			stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label')) rename(_cons "Constant") ///
-			order(`var_order' `ctrl' "Constant") mtitles(`colname') title("`table_title'") note("`table_note'")
+			order(`var_order' `rotctrl' `ctrl' "Constant") mtitles(`colname') title("`table_title'") note("`table_note'")
 		}
 		else {
 			if ("`keepvar'"!="") {
@@ -650,13 +657,13 @@ program regx, rclass sortpreserve
 				/* keep selected variables */
 				esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
 				drop(`drop_ctrl') stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label')) rename(_cons "Constant") ///
-				order(`var_order' `keepvar' "Constant") mtitles(`colname') title("`table_title'") note("`table_note'")			
+				order(`var_order' `rotctrl' `keepvar' "Constant") mtitles(`colname') title("`table_title'") note("`table_note'")			
 			}
 			else {
 				/* drop control */
 				esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
 				drop(`drop_ctrl') stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label')) rename(_cons "Constant") ///
-				order(`var_order' "Constant") mtitles(`colname') title("`table_title'") note("`table_note'")
+				order(`var_order' `rotctrl' "Constant") mtitles(`colname') title("`table_title'") note("`table_note'")
 			}
 		}
 	}
@@ -673,14 +680,14 @@ program regx, rclass sortpreserve
 		forval depidx = 1/1 {
 			forval indepidx = 1/1 {
 				if ("`inte'"!="") {
-					local col_items_f = "`inte_reglist`indepidx'' `keepvar'"
+					local col_items_f = "`inte_reglist`indepidx'' `: word `indepidx' of `rotctrl'' `keepvar'"
 				}
 				else {
 					if ("`dyn'"!="") {
-						local col_items_f = "`dyn_reglist`indepidx'' `keepvar'"
+						local col_items_f = "`dyn_reglist`indepidx'' `: word `indepidx' of `rotctrl'' `keepvar'"
 					}
 					else {
-						local col_items_f = "`: word `indepidx' of `indep'' `keepvar'"
+						local col_items_f = "`: word `indepidx' of `indep'' `: word `indepidx' of `rotctrl'' `keepvar'"
 					}
 				}
 				local sigmat_col_num : word count `col_items_f'
@@ -706,14 +713,14 @@ program regx, rclass sortpreserve
 					local yb_col = 3 * (`indepidx'-`indeplen'+`indeplen'*`depidx')-2
 					local yp_col = 3 * (`indepidx'-`indeplen'+`indeplen'*`depidx')
 					if ("`inte'"!="") {
-						local col_items = "`inte_reglist`indepidx'' `keepvar'"
+						local col_items = "`inte_reglist`indepidx'' `: word `indepidx' of `rotctrl'' `keepvar'"
 					}
 					else {
 						if ("`dyn'"!="") {
-							local col_items = "`dyn_reglist`indepidx'' `keepvar'"
+							local col_items = "`dyn_reglist`indepidx'' `: word `indepidx' of `rotctrl'' `keepvar'"
 						}
 						else {
-							local col_items = "`: word `indepidx' of `indep'' `keepvar'"
+							local col_items = "`: word `indepidx' of `indep'' `: word `indepidx' of `rotctrl'' `keepvar'"
 						}
 					}
 					local cell_word : word `b_col_idx' of `col_items'
@@ -816,14 +823,14 @@ capture program drop eqx
 program eqx
 
 	syntax anything [if] [in] , indep(namelist) eqt(string) [ctrl(string) absr(string) xtp(string) ///
-	inte(string) clust(namelist) dyn(string) dep2(string) ///
+	inte(string) clust(namelist) dyn(string) rotctrl(string) dep2(string) ///
 	tnote(string) ttitle(string) addn(string) edir(string) REPORT EXPORT]
 	
 	marksample touse
 	
 	/* restore arguments for regx */
 	local fullopt_args = ""
-	foreach opt in ctrl absr xtp inte clust dyn tnote ttitle edir report {
+	foreach opt in ctrl absr xtp inte clust dyn rotctrl tnote ttitle edir report {
 		if ("``opt''"!="") {
 			local `opt'_arg = "`opt'(``opt'')"
 			local fullopt_args = "`fullopt_args' ``opt'_arg'"

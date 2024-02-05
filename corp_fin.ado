@@ -827,7 +827,7 @@ program eqx
 
 	syntax anything [if] [in] , indep(namelist) eqt(string) [ctrl(string) absr(string) xtp(string) ///
 	inte(string) clust(namelist) dyn(string) rotctrl(string) dep2(string) ///
-	tnote(string) ttitle(string) addn(string) edir(string) REPORT EXPORT]
+	tnote(string) ttitle(string) addn(string) edir(string) sigout(string) sigkw(string) REPORT EXPORT]
 	
 	marksample touse
 	
@@ -837,6 +837,14 @@ program eqx
 		if ("``opt''"!="") {
 			local `opt'_arg = "`opt'(``opt'')"
 			local fullopt_args = "`fullopt_args' ``opt'_arg'"
+		}
+	}
+ 	/* significant output options */
+	local sigopt_args = ""
+	foreach opt in sigout {
+		if ("``opt''"!="") {
+			local `opt'_arg = "`opt'(``opt'')"
+			local sigopt_args = "`sigopt_args' ``opt'_arg'"
 		}
 	}
 	
@@ -888,7 +896,10 @@ program eqx
 		
 		/* export the results at the same time */
 		if ("`export'"!="") {
-			regx `anything' if `touse', indep(`indep') `fullopt_args' keepvar(`lhsvar' `rhsvar')
+			if ("`sigkw'"!="") {
+				local sigopt_args = "`sigopt_args' sigkw(`sigkw')"
+			}
+			regx `anything' if `touse', indep(`indep') `fullopt_args' `sigopt_args' keepvar(`lhsvar' `rhsvar')
 		}
 	
 		/* estimates store results */
@@ -935,6 +946,34 @@ program eqx
 		esttab using "`exportfile'", cells("`cellnames'") append nolines not se compress nogaps noobs plain ///
 		star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`lhsvar']==[`rhsvar'] `extra_addn'") ///
 		mtitle("[`sigidx' out of `colidxs' columns have significant difference]")
+
+		/* Chi-sq significance table */
+		if ("`sigopt_args'"!="") {
+			eststo clear
+			ereturn clear
+			estimates clear
+
+			local sigsummaryfile : subinstr local exportfile ".csv" "_ss.csv", all
+			local sigsummaryfile : subinstr local sigsummaryfile ".rtf" "_ss.rtf", all
+
+			local cellname_li = ""
+			foreach sigcnt in sigidx colidxs {
+				matrix mat`sigcnt' = J(1, 1, 0)
+				matrix colnames mat`sigcnt' = "Diff"
+				matrix mat`sigcnt'[1, 1] = ``sigcnt''
+				estadd matrix mat`sigcnt'
+				local cellname_li = "`cellname_li' mat`sigcnt'(fmt(%9.0f))"
+			}
+			matrix matperc = J(1, 1, 0)
+			matrix colnames matperc = "Diff"
+			matrix matperc[1, 1] = round(`sigidx'/`colidxs', 0.001)
+			estadd matrix matperc
+			local cellname_li = "`cellname_li' matperc(fmt(%9.3f))"
+
+			esttab using "`sigsummaryfile'", cells("`cellname_li'") ///
+			collabels(,none) mlabels(,none) eqlab(,none) ///
+			append nolines not se compress nogaps noobs plain
+		}
 	}
 	/* Situation 2: comparing the coefficients of independent variables between subsamples */
 	else if (strpos("`eqt'", "|") & !strpos("`eqt'", "==")) {
@@ -949,11 +988,27 @@ program eqx
 			local numeric_value = real("`subv'")
 			/* export tables */
 			if ("`export'"!="") {
-				if !missing(`numeric_value') {
-					regx `anything' if `subsvar'==`subv' & `touse', indep(`indep') `fullopt_args' addn("[`subsvar'==`subv']")
+				if ("`sigkw'"!="") {
+					if (`subvidx'==1) {
+						local sigopt_args = "sigout(`sigout') sigkw(`sigkw')"
+					}
+					else {
+						local sigopt_args = "sigout(`sigout'(`subv')) sigkw(`sigkw')"
+					}
 				}
 				else {
-					regx `anything' if `subsvar'=="`subv'" & `touse', indep(`indep') `fullopt_args' addn("[`subsvar'==`subv']")
+					if (`subvidx'==1) {
+						local sigopt_args = "sigout(`sigout')"
+					}
+					else {
+						local sigopt_args = "sigout(`sigout'(`subv'))"
+					}
+				}
+				if !missing(`numeric_value') {
+					regx `anything' if `subsvar'==`subv' & `touse', indep(`indep') `fullopt_args' `sigopt_args' addn("[`subsvar'==`subv']")
+				}
+				else {
+					regx `anything' if `subsvar'=="`subv'" & `touse', indep(`indep') `fullopt_args' `sigopt_args' addn("[`subsvar'==`subv']")
 				}
 			}
 			
@@ -1044,6 +1099,34 @@ program eqx
 				esttab using "`exportfile'", cells("`cellnames'") append nolines not se compress nogaps noobs plain ///
 				star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`eqs_var_x`indeplen''], `subsvar' [=`prsub1'] vs [=`prsub2'] `extra_addn'") ///
 				mtitle("[`sigidx' out of `colidxs' columns have significant difference]")
+
+				/* Chi-sq significance table */
+				if ("`sigopt_args'"!="") {
+					eststo clear
+					ereturn clear
+					estimates clear
+
+					local sigsummaryfile : subinstr local exportfile ".csv" "_ss.csv", all
+					local sigsummaryfile : subinstr local sigsummaryfile ".rtf" "_ss.rtf", all
+
+					local cellname_li = ""
+					foreach sigcnt in sigidx colidxs {
+						matrix mat`sigcnt' = J(1, 1, 0)
+						matrix colnames mat`sigcnt' = "Diff"
+						matrix mat`sigcnt'[1, 1] = ``sigcnt''
+						estadd matrix mat`sigcnt'
+						local cellname_li = "`cellname_li' mat`sigcnt'(fmt(%9.0f))"
+					}
+					matrix matperc = J(1, 1, 0)
+					matrix colnames matperc = "Diff"
+					matrix matperc[1, 1] = round(`sigidx'/`colidxs', 0.001)
+					estadd matrix matperc
+					local cellname_li = "`cellname_li' matperc(fmt(%9.3f))"
+
+					esttab using "`sigsummaryfile'", cells("`cellname_li'") ///
+					collabels(,none) mlabels(,none) eqlab(,none) ///
+					append nolines not se compress nogaps noobs plain
+				}
 			}
 		}
 		/* for a fixed indepvar */
@@ -1096,6 +1179,34 @@ program eqx
 				esttab using "`exportfile'", cells("`cellnames'") append nolines not se compress nogaps noobs plain ///
 				star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`eqtvar'], `subsvar' [=`prsub1'] vs [=`prsub2'] `extra_addn'") ///
 				mtitle("[`sigidx' out of `colidxs' columns have significant difference]")
+
+				/* Chi-sq significance table */
+				if ("`sigopt_args'"!="") {
+					eststo clear
+					ereturn clear
+					estimates clear
+
+					local sigsummaryfile : subinstr local exportfile ".csv" "_ss.csv", all
+					local sigsummaryfile : subinstr local sigsummaryfile ".rtf" "_ss.rtf", all
+
+					local cellname_li = ""
+					foreach sigcnt in sigidx colidxs {
+						matrix mat`sigcnt' = J(1, 1, 0)
+						matrix colnames mat`sigcnt' = "Diff"
+						matrix mat`sigcnt'[1, 1] = ``sigcnt''
+						estadd matrix mat`sigcnt'
+						local cellname_li = "`cellname_li' mat`sigcnt'(fmt(%9.0f))"
+					}
+					matrix matperc = J(1, 1, 0)
+					matrix colnames matperc = "Diff"
+					matrix matperc[1, 1] = round(`sigidx'/`colidxs', 0.001)
+					estadd matrix matperc
+					local cellname_li = "`cellname_li' matperc(fmt(%9.3f))"
+
+					esttab using "`sigsummaryfile'", cells("`cellname_li'") ///
+					collabels(,none) mlabels(,none) eqlab(,none) ///
+					append nolines not se compress nogaps noobs plain
+				}
 			}
 		}
 	}
@@ -1107,13 +1218,21 @@ program eqx
 
         /* export the results at the same time */
         if ("`export'"!="") {
-			if ("`eqtvar'"=="~") {
-				regx `anything' if `touse', indep(`indep') `fullopt_args'
-				regx `dep2' if `touse', indep(`indep') `fullopt_args'
+			if ("`sigkw'"!="") {
+				local sigopt_args_a = "sigout(`sigout') sigkw(`sigkw')"
+				local sigopt_args_b = "sigout(`sigout'(pair)) sigkw(`sigkw')"
 			}
 			else {
-				regx `anything' if `touse', indep(`indep') `fullopt_args' keepvar(`eqtvar')
-				regx `dep2' if `touse', indep(`indep') `fullopt_args' keepvar(`eqtvar')
+				local sigopt_args_a = "sigout(`sigout')"
+				local sigopt_args_b = "sigout(`sigout'(pair))"
+			}
+			if ("`eqtvar'"=="~") {
+				regx `anything' if `touse', indep(`indep') `fullopt_args' `sigopt_args_a'
+				regx `dep2' if `touse', indep(`indep') `fullopt_args' `sigopt_args_b'
+			}
+			else {
+				regx `anything' if `touse', indep(`indep') `fullopt_args' `sigopt_args_a' keepvar(`eqtvar')
+				regx `dep2' if `touse', indep(`indep') `fullopt_args' `sigopt_args_b' keepvar(`eqtvar')
 			}
 		}
 
@@ -1180,6 +1299,34 @@ program eqx
             esttab using "`exportfile'", cells("`cellnames'") append nolines not se compress nogaps noobs plain ///
             star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`eqs_var_x`indeplen''], Dep Var [=`: word 1 of `anything''] vs [=`: word 1 of `dep2''] `extra_addn'") ///
             mtitle("[`sigidx' out of `colidxs' columns have significant difference]")
+
+			/* Chi-sq significance table */
+			if ("`sigopt_args'"!="") {
+				eststo clear
+				ereturn clear
+				estimates clear
+
+				local sigsummaryfile : subinstr local exportfile ".csv" "_ss.csv", all
+				local sigsummaryfile : subinstr local sigsummaryfile ".rtf" "_ss.rtf", all
+
+				local cellname_li = ""
+				foreach sigcnt in sigidx colidxs {
+					matrix mat`sigcnt' = J(1, 1, 0)
+					matrix colnames mat`sigcnt' = "Diff"
+					matrix mat`sigcnt'[1, 1] = ``sigcnt''
+					estadd matrix mat`sigcnt'
+					local cellname_li = "`cellname_li' mat`sigcnt'(fmt(%9.0f))"
+				}
+				matrix matperc = J(1, 1, 0)
+				matrix colnames matperc = "Diff"
+				matrix matperc[1, 1] = round(`sigidx'/`colidxs', 0.001)
+				estadd matrix matperc
+				local cellname_li = "`cellname_li' matperc(fmt(%9.3f))"
+
+				esttab using "`sigsummaryfile'", cells("`cellname_li'") ///
+				collabels(,none) mlabels(,none) eqlab(,none) ///
+				append nolines not se compress nogaps noobs plain
+			}
         }
         else if ("`eqtvar'"!="~" & "`eqtvar'"!="" & `: word count `eqtvar''==1) {
             local cellnames = ""
@@ -1225,6 +1372,34 @@ program eqx
             esttab using "`exportfile'", cells("`cellnames'") append nolines not se compress nogaps noobs plain ///
             star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`eqtvar'], Dep Var [=`: word 1 of `anything''] vs [=`: word 1 of `dep2''] `extra_addn'") ///
             mtitle("[`sigidx' out of `colidxs' columns have significant difference]")
+
+			/* Chi-sq significance table */
+			if ("`sigopt_args'"!="") {
+				eststo clear
+				ereturn clear
+				estimates clear
+
+				local sigsummaryfile : subinstr local exportfile ".csv" "_ss.csv", all
+				local sigsummaryfile : subinstr local sigsummaryfile ".rtf" "_ss.rtf", all
+
+				local cellname_li = ""
+				foreach sigcnt in sigidx colidxs {
+					matrix mat`sigcnt' = J(1, 1, 0)
+					matrix colnames mat`sigcnt' = "Diff"
+					matrix mat`sigcnt'[1, 1] = ``sigcnt''
+					estadd matrix mat`sigcnt'
+					local cellname_li = "`cellname_li' mat`sigcnt'(fmt(%9.0f))"
+				}
+				matrix matperc = J(1, 1, 0)
+				matrix colnames matperc = "Diff"
+				matrix matperc[1, 1] = round(`sigidx'/`colidxs', 0.001)
+				estadd matrix matperc
+				local cellname_li = "`cellname_li' matperc(fmt(%9.3f))"
+
+				esttab using "`sigsummaryfile'", cells("`cellname_li'") ///
+				collabels(,none) mlabels(,none) eqlab(,none) ///
+				append nolines not se compress nogaps noobs plain
+			}
         }
     }
 	else {

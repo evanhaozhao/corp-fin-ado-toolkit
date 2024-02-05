@@ -3,8 +3,10 @@
  * Project: Programs for corporate finance empirical studies
  * Author: Hao Zhao
  * Created: August 19, 2023
- * Modified: February 4, 2024
- * Version 1.4.1
+ * Modified: February 5, 2024
+ * Version
+ 	- regx: 1.4.1 (4feb2024)
+	- eqx: 2.0.2 (5feb2024)
  */
 ///=============================================================================
 /* regx -> regression to output tables 
@@ -1105,8 +1107,14 @@ program eqx
 
         /* export the results at the same time */
         if ("`export'"!="") {
-			regx `anything' if `touse', indep(`indep') `fullopt_args' keepvar(`eqtvar')
-            regx `dep2' if `touse', indep(`indep') `fullopt_args' keepvar(`eqtvar')
+			if ("`eqtvar'"=="~") {
+				regx `anything' if `touse', indep(`indep') `fullopt_args'
+				regx `dep2' if `touse', indep(`indep') `fullopt_args'
+			}
+			else {
+				regx `anything' if `touse', indep(`indep') `fullopt_args' keepvar(`eqtvar')
+				regx `dep2' if `touse', indep(`indep') `fullopt_args' keepvar(`eqtvar')
+			}
 		}
 
         /* estimates store results */

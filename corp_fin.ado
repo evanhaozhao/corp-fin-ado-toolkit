@@ -6,26 +6,10 @@
  * Modified: February 5, 2024
  * Version
  	- regx: 1.4.1 (4feb2024)
-	- eqx: 2.0.2 (5feb2024)
+	- eqx: 2.1.1 (5feb2024)
  */
 ///=============================================================================
-/* regx -> regression to output tables 
-
- * Identifying controls and FEs, supported by `reghdfe`, `reg`, and `xtreg`
- * Sending variables to models:
-	- Baseline: y ~ x
-	- Interaction: y ~ x1 * x2
-		- x1#x2
-	- Subsample: y ~ x `if'
- * Exporting tables, supported by `esttab`:
-	- Ordering variables
-	- Dropping variables
-	- Assigning columns
-	- Adding notes
- * In order to make the code in minimal style, unless specified, the default setting is:
-	- Export file directory: ${dir_table_flow}
- * Dynamic regression: with time indicator [dyn(x, y=, b=, p=, c=, s=)]
- */
+/* regx -> regressions to output tables */
 ///=============================================================================
 capture program drop regx
 program regx, rclass sortpreserve

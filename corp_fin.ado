@@ -7,7 +7,7 @@
  * Version
  	- regx: 1.4.1 (4feb2024)
 	- eqx: 2.1.1 (5feb2024)
-	- sumx: 1.2.0 (19feb2024)
+	- sumx: 1.2.1 (19feb2024)
  */
 ///=============================================================================
 /* regx -> regressions to output tables */
@@ -1475,7 +1475,13 @@ program sumx, sortpreserve
 			matrix rownames sum_stat = `rowname_li'
 			local i = 1
 			foreach group in `groups' {
-				quietly: summ `anything' if `touse' & `category'=="`group'", detail
+				local numeric_value = real("`group'")
+				if !missing(`numeric_value') {
+					quietly: summ `anything' if `touse' & `category'==`group', detail
+				}
+				else {
+					quietly: summ `anything' if `touse' & `category'==`group', detail
+				}
 				matrix sum_stat[`i',1] = r(N)
 				matrix sum_stat[`i',2] = round(r(mean), `deci')
 				matrix sum_stat[`i',3] = round(r(sd), `deci')

@@ -3,10 +3,11 @@
  * Project: Programs for corporate finance empirical studies
  * Author: Hao Zhao
  * Created: August 19, 2023
- * Modified: February 5, 2024
+ * Modified: February 19, 2024
  * Version
  	- regx: 1.4.1 (4feb2024)
 	- eqx: 2.1.1 (5feb2024)
+	- sumx: 1.2.0 (19feb2024)
  */
 ///=============================================================================
 /* regx -> regressions to output tables */
@@ -1394,3 +1395,100 @@ program eqx
 	ereturn clear
 	estimates clear
 end
+
+///=============================================================================
+/* sumx -> Generate summary statistics tables */
+///=============================================================================
+
+capture program drop sumx
+program sumx, sortpreserve
+
+	syntax anything [if] [in], deci(numlist) edir(string) [category(string) ttitle(string) addn(string) RLABEL]
+	
+	marksample touse
+
+	/* Table title: "`table_title'" */
+	if ("`ttitle'" == "") {
+		local table_title = "Summary statistics `addn'"
+	}
+	else {
+		local table_title = "`ttitle'"
+	}
+	
+	local var_len : word count `anything'
+	
+	if ("`category'" == "") {
+		matrix sum_stat = J(`var_len', 8, 0)
+		matrix colnames sum_stat = "Obs" "Mean" "Std.Dev." "Min" "p25" "Median" "p75" "Max"
+		local rowname_li = `""'
+		foreach sum_v in `anything' {
+			if ("`rlabel'" != "") {
+				local label_v : var label `sum_v'
+				if ("`label_v'" == "") {
+					local label_v = "`sum_v'"
+				}
+				if (strlen("`label_v'") > 32) {
+					local label_v = substr("`label_v'", 1, 32)
+				}
+				local rowname_li = `"`rowname_li' "`label_v'" "'
+			}
+			else {
+				local rowname_li = `"`rowname_li' "`sum_v'" "'
+			}
+		}
+		matrix rownames sum_stat = `rowname_li'
+		local i = 1
+		foreach x in `anything' {
+			quiet: summ `x' if `touse', detail
+			matrix sum_stat[`i',1] = r(N)
+			matrix sum_stat[`i',2] = round(r(mean), `deci')
+			matrix sum_stat[`i',3] = round(r(sd), `deci')
+			matrix sum_stat[`i',4] = round(r(min), `deci')
+			matrix sum_stat[`i',5] = round(r(p25), `deci')
+			matrix sum_stat[`i',6] = round(r(p50), `deci')
+			matrix sum_stat[`i',7] = round(r(p75), `deci')
+			matrix sum_stat[`i',8] = round(r(max), `deci')
+			local i = `i'+ 1
+		}
+		mat2txt, matrix(sum_stat) saving("`edir'") title("`table_title'") append
+	}
+	else if ("`category'" != "") {
+		if `var_len' != 1 {
+			di "[ERROR] Only one input variable allowed"
+			exit
+		}
+		else {
+			levelsof `category' if `touse', local(groups)
+			local n_group : word count `groups'
+			matrix sum_stat = J(`n_group', 8, 0)
+			matrix colnames sum_stat = "Obs" "Mean" "Std.Dev." "Min" "p25" "Median" "p75" "Max"
+			local rowname_li = `""'
+			foreach group in `groups' {
+				if (strlen("`group'") > 32) {
+					local r_grp = substr("`group'", 1, 32)
+				}
+				else {
+					local r_grp = "`group'"
+				}
+				local rowname_li = `"`rowname_li' "`r_grp'" "'
+			}
+			matrix rownames sum_stat = `rowname_li'
+			local i = 1
+			foreach group in `groups' {
+				quietly: summ `anything' if `touse' & `category'=="`group'", detail
+				matrix sum_stat[`i',1] = r(N)
+				matrix sum_stat[`i',2] = round(r(mean), `deci')
+				matrix sum_stat[`i',3] = round(r(sd), `deci')
+				matrix sum_stat[`i',4] = round(r(min), `deci')
+				matrix sum_stat[`i',5] = round(r(p25), `deci')
+				matrix sum_stat[`i',6] = round(r(p50), `deci')
+				matrix sum_stat[`i',7] = round(r(p75), `deci')
+				matrix sum_stat[`i',8] = round(r(max), `deci')
+				local i = `i'+ 1
+			}
+			mat2txt, matrix(sum_stat) saving("`edir'") title("`table_title'") append
+		}		
+	}
+	
+end
+

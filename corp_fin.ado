@@ -7,7 +7,7 @@
  * Version
  	- regx: 1.4.1 (4feb2024)
 	- eqx: 2.1.1 (5feb2024)
-	- sumx: 1.3.0 (21feb2024)
+	- sumx: 1.3.1 (21feb2024)
  */
 ///=============================================================================
 /* regx -> regressions to output tables */
@@ -1483,7 +1483,7 @@ program sumx, sortpreserve
 			estimates clear
 			ereturn clear
 
-			estpost ttest `anything', by(`tgroup')
+			estpost ttest `anything' if `touse', by(`tgroup')
 			matrix ttest_stat = J(`var_len', 4, 0)
 			matrix colnames ttest_stat = "Diff" "Std.Err." "P-value" "N"
 			matrix rownames ttest_stat = `rowname_li'
@@ -1563,7 +1563,7 @@ program sumx, sortpreserve
 				local pair_v1 : word `var_idx' of `anything'
 				local pair_v2 : word `var_idx' of `tvar'
 				capture {
-					ttest `pair_v1' == `pair_v2'
+					ttest `pair_v1' == `pair_v2' if `touse'
 					local e_b = r(mu_1) - r(mu_2)
 					matrix ttest_stat[`var_idx', 1] = round(`e_b', `deci')
 					local e_se = r(se)

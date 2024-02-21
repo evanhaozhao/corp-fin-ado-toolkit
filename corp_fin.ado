@@ -3,11 +3,11 @@
  * Project: Programs for corporate finance empirical studies
  * Author: Hao Zhao
  * Created: August 19, 2023
- * Modified: February 19, 2024
+ * Modified: February 21, 2024
  * Version
  	- regx: 1.4.1 (4feb2024)
 	- eqx: 2.1.1 (5feb2024)
-	- sumx: 1.2.1 (19feb2024)
+	- sumx: 1.3.0 (21feb2024)
  */
 ///=============================================================================
 /* regx -> regressions to output tables */
@@ -1403,7 +1403,8 @@ end
 capture program drop sumx
 program sumx, sortpreserve
 
-	syntax anything [if] [in], deci(numlist) edir(string) [category(string) ttitle(string) addn(string) RLABEL]
+	syntax anything [if] [in], deci(numlist) edir(string) [category(string) tgroup(string) tvar(string) ///
+	ttitle(string) addn(string) RLABEL]
 	
 	marksample touse
 
@@ -1417,7 +1418,167 @@ program sumx, sortpreserve
 	
 	local var_len : word count `anything'
 	
-	if ("`category'" == "") {
+	/* tgroup */
+	if ("`tgroup'" != "") {
+		if ("`category'" != "") {
+			di "[Error] category cannot be used with tgroup"
+			exit
+		}
+		if ("`tvar'" != "") {
+			di "[Error] tvar cannot be used with tgroup"
+			exit
+		}
+		eststo clear
+		ereturn clear
+		estimates clear
+		
+		levelsof `tgroup', local(tdummies)
+		local n_dummy : word count `tdummies'
+		if (`n_dummy' != 2) {
+			di "[Error] input of tgroup must be a binary variable"
+		}
+		else {
+			foreach group in `tdummies' {
+				matrix sum_stat = J(`var_len', 8, 0)
+				matrix colnames sum_stat = "Obs" "Mean" "Std.Dev." "Min" "p25" "Median" "p75" "Max"
+				local rowname_li = `""'
+				foreach sum_v in `anything' {
+					if ("`rlabel'" != "") {
+						local label_v : var label `sum_v'
+						if ("`label_v'" == "") {
+							local label_v = "`sum_v'"
+						}
+						if (strlen("`label_v'") > 32) {
+							local label_v = substr("`label_v'", 1, 32)
+						}
+						local rowname_li = `"`rowname_li' "`label_v'" "'
+					}
+					else {
+						local rowname_li = `"`rowname_li' "`sum_v'" "'
+					}
+				}
+				matrix rownames sum_stat = `rowname_li'
+				local i = 1
+				foreach var in `anything' {
+					
+					local numeric_value = real("`group'")
+					if !missing(`numeric_value') {
+						quietly: summ `var' if `touse' & `tgroup'==`group', detail
+					}
+					else {
+						quietly: summ `var' if `touse' & `tgroup'=="`group'", detail
+					}
+					matrix sum_stat[`i',1] = r(N)
+					matrix sum_stat[`i',2] = round(r(mean), `deci')
+					matrix sum_stat[`i',3] = round(r(sd), `deci')
+					matrix sum_stat[`i',4] = round(r(min), `deci')
+					matrix sum_stat[`i',5] = round(r(p25), `deci')
+					matrix sum_stat[`i',6] = round(r(p50), `deci')
+					matrix sum_stat[`i',7] = round(r(p75), `deci')
+					matrix sum_stat[`i',8] = round(r(max), `deci')
+					local i = `i'+ 1
+				}
+				mat2txt, matrix(sum_stat) saving("`edir'") title("`table_title' (`tgroup'=`group')") append
+			}
+			estimates clear
+			ereturn clear
+
+			estpost ttest `anything', by(`tgroup')
+			matrix ttest_stat = J(`var_len', 4, 0)
+			matrix colnames ttest_stat = "Diff" "Std.Err." "P-value" "N"
+			matrix rownames ttest_stat = `rowname_li'
+			local i = 1
+			foreach var in `anything' {
+				local e_b = e(b)[1, "`var'"]
+				matrix ttest_stat[`i',1] = round(`e_b', `deci')
+				local e_se = e(se)[1, "`var'"]
+				matrix ttest_stat[`i',2] = round(`e_se', `deci')
+				local e_p = e(p)[1, "`var'"]
+				matrix ttest_stat[`i',3] = round(`e_p', `deci')
+				local e_count = e(count)[1, "`var'"]
+				matrix ttest_stat[`i',4] = round(`e_count', `deci')
+				local i = `i'+ 1
+			}
+			mat2txt, matrix(ttest_stat) saving("`edir'") title("T-test for (`tgroup')") append
+
+			estimates clear
+			ereturn clear
+		}
+	} 
+	
+	/* tvar */
+	if ("`tvar'" != "") {
+		if ("`category'" != "") {
+			di "[Error] category cannot be used with tvar"
+			exit
+		}
+		local n_tvar : word count `tvar'
+		if (`n_tvar' != `var_len') {
+			di "[Error] The number of paired variables should equal to the number of variables"
+			exit
+		}
+		else {
+			local vpair_idx = 1
+			foreach var_pair in anything tvar {
+				matrix sum_stat = J(`var_len', 8, 0)
+				matrix colnames sum_stat = "Obs" "Mean" "Std.Dev." "Min" "p25" "Median" "p75" "Max"
+				local rowname_li = `""'
+				foreach sum_v in ``var_pair'' {
+					if ("`rlabel'" != "") {
+						local label_v : var label `sum_v'
+						if ("`label_v'" == "") {
+							local label_v = "`sum_v'"
+						}
+						if (strlen("`label_v'") > 32) {
+							local label_v = substr("`label_v'", 1, 32)
+						}
+						local rowname_li = `"`rowname_li' "`label_v'" "'
+					}
+					else {
+						local rowname_li = `"`rowname_li' "`sum_v'" "'
+					}
+				}
+				matrix rownames sum_stat = `rowname_li'
+				local i = 1
+				foreach x in ``var_pair'' {
+					quiet: summ `x' if `touse', detail
+					matrix sum_stat[`i',1] = r(N)
+					matrix sum_stat[`i',2] = round(r(mean), `deci')
+					matrix sum_stat[`i',3] = round(r(sd), `deci')
+					matrix sum_stat[`i',4] = round(r(min), `deci')
+					matrix sum_stat[`i',5] = round(r(p25), `deci')
+					matrix sum_stat[`i',6] = round(r(p50), `deci')
+					matrix sum_stat[`i',7] = round(r(p75), `deci')
+					matrix sum_stat[`i',8] = round(r(max), `deci')
+					local i = `i'+ 1
+				}
+				mat2txt, matrix(sum_stat) saving("`edir'") title("`table_title' (variable list `vpair_idx')") append
+				local vpair_idx = `vpair_idx' + 1
+			}
+
+			matrix ttest_stat = J(`var_len', 4, 0)
+			matrix colnames ttest_stat = "Diff" "Std.Err." "P-value"  "N"
+			matrix rownames ttest_stat = `rowname_li'
+			forval var_idx = 1/`var_len' {	
+				local pair_v1 : word `var_idx' of `anything'
+				local pair_v2 : word `var_idx' of `tvar'
+				capture {
+					ttest `pair_v1' == `pair_v2'
+					local e_b = r(mu_1) - r(mu_2)
+					matrix ttest_stat[`var_idx', 1] = round(`e_b', `deci')
+					local e_se = r(se)
+					matrix ttest_stat[`var_idx', 2] = round(`e_se', `deci')
+					local e_p = r(p)
+					matrix ttest_stat[`var_idx', 3] = round(`e_p', `deci')
+					local e_count = r(N_1)
+					matrix ttest_stat[`var_idx', 4] = round(`e_count', `deci')
+				}
+			}
+			mat2txt, matrix(ttest_stat) saving("`edir'") title("T-test for (`: word 1 of `anything''==`: word 1 of `tvar'')") append
+		}
+	}
+	
+	if ("`category'" == "" & "`tgroup'" == "" & "`tvar'" == "") {
 		matrix sum_stat = J(`var_len', 8, 0)
 		matrix colnames sum_stat = "Obs" "Mean" "Std.Dev." "Min" "p25" "Median" "p75" "Max"
 		local rowname_li = `""'
@@ -1480,7 +1641,7 @@ program sumx, sortpreserve
 					quietly: summ `anything' if `touse' & `category'==`group', detail
 				}
 				else {
-					quietly: summ `anything' if `touse' & `category'==`group', detail
+					quietly: summ `anything' if `touse' & `category'=="`group'", detail
 				}
 				matrix sum_stat[`i',1] = r(N)
 				matrix sum_stat[`i',2] = round(r(mean), `deci')

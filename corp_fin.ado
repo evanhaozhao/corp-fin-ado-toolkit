@@ -3,9 +3,9 @@
  * Project: Programs for corporate finance empirical studies
  * Author: Hao Zhao
  * Created: August 19, 2023
- * Modified: February 21, 2024
+ * Modified: April 2, 2024
  * Version
- 	- regx: 1.4.1 (4feb2024)
+ 	- regx: 1.4.2 (2apr2024)
 	- eqx: 2.1.1 (5feb2024)
 	- sumx: 1.3.1 (21feb2024)
  */
@@ -18,7 +18,7 @@ program regx, rclass sortpreserve
 	syntax anything [if] [in] , indep(namelist) [ctrl(string) absr(string) xtp(string) ///
 	inte(string) clust(namelist) dyn(string) rotctrl(string) tobit(string) ///
 	tnote(string) ttitle(string) addn(string) edir(string) keepvar(string) ///
-	stosuf(string) sigout(string) sigkw(string) SIGMAT REPORT DISPLAY CHISTORE]
+	stosuf(string) sigout(string) sigkw(string) SIGMAT REPORT DISPLAY CHISTORE NOSINGLETON]
 	
 	marksample touse
 	
@@ -37,6 +37,14 @@ program regx, rclass sortpreserve
 		}
 	}
 	
+	/* singleton setting for reghdfe */
+	if ("`nosingleton'"!="") {
+		local singletonset = `""'
+	}
+	else {
+		local singletonset = `" keepsingleton "'
+	}
+
 	/* `suest` does not support xtreg random effect; the estimation of xtreg fe is done by reg..absorb */
 	if ("`chistore'"!="") {
 		if ("`xtp'"!="") {
@@ -441,7 +449,7 @@ program regx, rclass sortpreserve
 						}
 						else {
 							/* Interaction model */
-							eststo: reghdfe `depvar' `inte_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', absorb(`absr') vce(`cse')
+							eststo: reghdfe `depvar' `inte_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', absorb(`absr') vce(`cse') `singletonset'
 						}
 					}
 					else {
@@ -452,10 +460,10 @@ program regx, rclass sortpreserve
 							}
 							else {
 								/* dynamic effect model & plot */
-								eststo: reghdfe `depvar' `dyn_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', absorb(`absr') vce(`cse')
+								eststo: reghdfe `depvar' `dyn_reglist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', absorb(`absr') vce(`cse') `singletonset'
 								if (`if_dyn_plot'==1) {
 									quietly {
-										reghdfe `depvar' `dyn_plotlist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', absorb(`absr') vce(`cse')
+										reghdfe `depvar' `dyn_plotlist`indepidx'' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', absorb(`absr') vce(`cse') `singletonset'
 										coefplot, keep(c.*#c.*) vertical omitted base levels(`dyn_ci') ///
 										rename(`dyn_rename', regex) order(`dyn_reorder') ///
 										mcolor("0 191 255") ciopts(lcolor("0 97 154") recast(rcap)) ///
@@ -476,7 +484,7 @@ program regx, rclass sortpreserve
 							}
 							else {
 								/* standard model with FEs absorbed */
-								eststo: reghdfe `depvar' `indepvar' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', absorb(`absr') vce(`cse')
+								eststo: reghdfe `depvar' `indepvar' `ctrl' `: word `indepidx' of `rotctrl'' if `touse', absorb(`absr') vce(`cse') `singletonset'
 							}
 						}
 					}

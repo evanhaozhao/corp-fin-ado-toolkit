@@ -5,9 +5,9 @@
  * Created: August 19, 2023
  * Modified: April 2, 2024
  * Version
- 	- regx: 1.4.2 (2apr2024)
+ 	- regx: 1.4.3 (19apr2024)
 	- eqx: 2.1.1 (5feb2024)
-	- sumx: 1.3.1 (21feb2024)
+	- sumx: 1.3.2 (19apr2024)
  */
 ///=============================================================================
 /* regx -> regressions to output tables */
@@ -90,17 +90,17 @@ program regx, rclass sortpreserve
 	/* Priority: `clust' > `xtp' > $clustervar > robust */
 	/* (1) If cluster is specified */
 	if ("`clust'"!="") {
-		local cse = "cl `clust'"
+		local cse = "cluster `clust'"
 	}
 	else {
 		/* (2) If panel is claimed & no cluster specified, cluster SE at id level */
 		if ("`xtp'"!="") {
-			local cse = "cl `: word 1 of `xtp''"
+			local cse = "cluster `: word 1 of `xtp''"
 		}
 		else {
 			/* (3) If both panel and cluster are not specified */
 			if ("${clustervar}"!="") {
-				local cse = "cl ${clustervar}"
+				local cse = "cluster ${clustervar}"
 			}
 			else {
 				local cse = "robust"
@@ -847,17 +847,17 @@ program eqx
 	
 	/* (1) If cluster is specified */
 	if ("`clust'"!="") {
-		local cse = "cl `clust'"
+		local cse = "cluster `clust'"
 	}
 	else {
 		/* (2) If panel is claimed & no cluster specified, cluster SE at id level */
 		if ("`xtp'"!="") {
-			local cse = "cl `: word 1 of `xtp''"
+			local cse = "cluster `: word 1 of `xtp''"
 		}
 		else {
 			/* (3) If both panel and cluster are not specified */
 			if ("${clustervar}"!="") {
-				local cse = "cl ${clustervar}"
+				local cse = "cluster ${clustervar}"
 			}
 			else {
 				local cse = "robust"
@@ -1412,7 +1412,7 @@ capture program drop sumx
 program sumx, sortpreserve
 
 	syntax anything [if] [in], deci(numlist) edir(string) [category(string) tgroup(string) tvar(string) ///
-	ttitle(string) addn(string) RLABEL]
+	ttitle(string) addn(string) RLABEL TTEST]
 	
 	marksample touse
 
@@ -1620,6 +1620,27 @@ program sumx, sortpreserve
 			local i = `i'+ 1
 		}
 		mat2txt, matrix(sum_stat) saving("`edir'") title("`table_title'") append
+		
+		if ("`ttest'" != "") {
+			matrix ttest_stat = J(`var_len', 4, 0)
+			matrix colnames ttest_stat = "Diff" "Std.Err." "P-value"  "N"
+			matrix rownames ttest_stat = `rowname_li'
+			forval var_idx = 1/`var_len' {
+				local pair_v1 : word `var_idx' of `anything'
+				capture {
+					ttest `pair_v1' == 0 if `touse'
+					local e_b = r(mu_1) - 0
+					matrix ttest_stat[`var_idx', 1] = round(`e_b', `deci')
+					local e_se = r(se)
+					matrix ttest_stat[`var_idx', 2] = round(`e_se', `deci')
+					local e_p = r(p)
+					matrix ttest_stat[`var_idx', 3] = round(`e_p', `deci')
+					local e_count = r(N_1)
+					matrix ttest_stat[`var_idx', 4] = round(`e_count', `deci')
+				}
+			}
+			mat2txt, matrix(ttest_stat) saving("`edir'") title("T-test for (`: word 1 of `anything''== 0)") append
+		}
 	}
 	else if ("`category'" != "") {
 		if `var_len' != 1 {

@@ -3,7 +3,7 @@
  * Project: Programs for corporate finance empirical studies
  * Author: Hao Zhao
  * Created: August 19, 2023
- * Modified: April 2, 2024
+ * Modified: May 23, 2024
  * Version
  	- regx: 1.5.0 (23may2024)
 	- eqx: 2.1.1 (5feb2024)

@@ -5,7 +5,7 @@
  * Created: August 19, 2023
  * Modified: May 23, 2024
  * Version
- 	- regx: 1.5.0 (23may2024)
+ 	- regx: 1.5.1 (23may2024)
 	- eqx: 2.1.1 (5feb2024)
 	- sumx: 1.3.2 (19apr2024)
  */
@@ -18,7 +18,7 @@ program regx, rclass sortpreserve
 	syntax anything [if] [in] , indep(namelist) [ctrl(string) absr(string) xtp(string) ///
 	inte(string) clust(namelist) dyn(string) rotctrl(string) tobit(string) ///
 	tnote(string) ttitle(string) addn(string) edir(string) keepvar(string) ///
-	stosuf(string) sigout(string) sigkw(string) SIGMAT RCOEF REPORT DISPLAY CHISTORE NOSINGLETON]
+	stosuf(string) sigout(string) sigkw(string) rcoefidx(string) SIGMAT RCOEF REPORT DISPLAY CHISTORE NOSINGLETON]
 	
 	marksample touse
 	
@@ -900,8 +900,20 @@ program regx, rclass sortpreserve
 					quietly: estadd matrix C_`reg_idx'_`col_idx'
 					local cellname_li = "`cellname_li' C_`reg_idx'_`col_idx'(fmt(%12.0g))"
 				}
+				if ("`rcoefidx'" != "") {
+					matrix C_init_`reg_idx' = J(1, 1, `rcoefidx')
+					matrix colnames C_init_`reg_idx' = "reg `reg_idx'"
+					quietly: estadd matrix C_init_`reg_idx'
+					local cellname_li = "`cellname_li' C_init_`reg_idx'(fmt(%9.0f))"
+				}
 				/* If `reg_idx' is 1 & addn contains rcoef: export title */
 				if (`reg_idx' == 1 & strpos("`addn'", "(rcoef)")) {
+					if ("`rcoefidx'" != "") {
+						local btp_c_col_name = `"`c_col_name' "rcoef_idx""'
+					}
+					else {
+						local btp_c_col_name = `"`c_col_name'"'
+					}
 					if ("`ttitle'"=="") {
 						local table_title = "Dep [`: word 1 of `anything''] ~ indep [`: word 1 of `indep''] `addn' `extra_addn'"
 					}
@@ -909,7 +921,7 @@ program regx, rclass sortpreserve
 						local table_title = "`ttitle' `extra_addn'"
 					}
 					esttab using "`btpsummaryfile'", cells("`cellname_li'") ///
-					collabels(`c_col_name') mlabels(,none) eqlab(,none) title(`table_title') ///
+					collabels(`btp_c_col_name') mlabels(,none) eqlab(,none) title(`table_title') ///
 					append nolines not se compress nogaps noobs plain					
 				}
 				else {

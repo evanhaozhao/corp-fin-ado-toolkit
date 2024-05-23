@@ -904,7 +904,7 @@ program regx, rclass sortpreserve
 					matrix C_init_`reg_idx' = J(1, 1, `rcoefidx')
 					matrix colnames C_init_`reg_idx' = "reg `reg_idx'"
 					quietly: estadd matrix C_init_`reg_idx'
-					local cellname_li = "`cellname_li' C_init_`reg_idx'(fmt(%9.0f))"
+					local cellname_li = "`cellname_li' C_init_`reg_idx'(fmt(%12.0g))"
 				}
 				/* If `reg_idx' is 1 & addn contains rcoef: export title */
 				if (`reg_idx' == 1 & strpos("`addn'", "(rcoef)")) {

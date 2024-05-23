@@ -5,7 +5,7 @@
  * Created: August 19, 2023
  * Modified: April 2, 2024
  * Version
- 	- regx: 1.4.3 (19apr2024)
+ 	- regx: 1.5.0 (23may2024)
 	- eqx: 2.1.1 (5feb2024)
 	- sumx: 1.3.2 (19apr2024)
  */
@@ -18,7 +18,7 @@ program regx, rclass sortpreserve
 	syntax anything [if] [in] , indep(namelist) [ctrl(string) absr(string) xtp(string) ///
 	inte(string) clust(namelist) dyn(string) rotctrl(string) tobit(string) ///
 	tnote(string) ttitle(string) addn(string) edir(string) keepvar(string) ///
-	stosuf(string) sigout(string) sigkw(string) SIGMAT REPORT DISPLAY CHISTORE NOSINGLETON]
+	stosuf(string) sigout(string) sigkw(string) SIGMAT RCOEF REPORT DISPLAY CHISTORE NOSINGLETON]
 	
 	marksample touse
 	
@@ -801,6 +801,125 @@ program regx, rclass sortpreserve
 			}
  		}
 		return matrix sigmat = B
+	}
+
+	/* Export regression b, t, and p */
+	if ("`rcoef'" != "") {
+		if ("`sigmat'"!="" | "`sigout'"!="") {
+			di "Cannot use option sigmat/sigout with option rcoef"
+			exit
+		}
+		else {
+			quietly: esttab
+			matrix A = r(coefs)
+			local deplen : word count `anything'
+			local indeplen : word count `indep'
+			local rcoef_row_len = `deplen' * `indeplen'
+
+			/* For defining the matrix width and colnames (using the first regression) */
+			local col_items_f = ""
+			forval depidx = 1/1 {
+				forval indepidx = 1/1 {
+					if ("`inte'"!="") {
+						local col_items_f = "`inte_reglist`indepidx'' `: word `indepidx' of `rotctrl'' `keepvar'"
+					}
+					else {
+						if ("`dyn'"!="") {
+							local col_items_f = "`dyn_reglist`indepidx'' `: word `indepidx' of `rotctrl'' `keepvar'"
+						}
+						else {
+							local col_items_f = "`: word `indepidx' of `indep'' `: word `indepidx' of `rotctrl'' `keepvar'"
+						}
+					}
+					local rcoef_col_num : word count `col_items_f'
+					local rcoef_col_len = `rcoef_col_num' * 3
+				}
+			}
+
+			/* Storing b, t, and p; matrix size: nrow = # of regressions, ncol = # of vars */
+			matrix C = J(`rcoef_row_len', `rcoef_col_len', 0)
+			local c_col_name = `""'
+			foreach col in `col_items_f' {
+				local c_col_name = `"`c_col_name' "`col'" "(t)" "(p)""'
+			}
+			matrix colnames C = `c_col_name'
+	
+			forval b_col_idx = 1/`rcoef_col_num' {
+				local col_items = ""
+				local reg_idx = 1
+				forval depidx = 1/`deplen' {
+					forval indepidx = 1/`indeplen' {
+						local yb_col = 3 * (`indepidx'-`indeplen'+`indeplen'*`depidx')-2
+						local yt_col = 3 * (`indepidx'-`indeplen'+`indeplen'*`depidx')-1
+						local yp_col = 3 * (`indepidx'-`indeplen'+`indeplen'*`depidx')
+						if ("`inte'"!="") {
+							local col_items = "`inte_reglist`indepidx'' `: word `indepidx' of `rotctrl'' `keepvar'"
+						}
+						else {
+							if ("`dyn'"!="") {
+								local col_items = "`dyn_reglist`indepidx'' `: word `indepidx' of `rotctrl'' `keepvar'"
+							}
+							else {
+								local col_items = "`: word `indepidx' of `indep'' `: word `indepidx' of `rotctrl'' `keepvar'"
+							}
+						}
+						local cell_word : word `b_col_idx' of `col_items'
+						if ("`tobit'"!="") {
+							local cell_b = A["main:`cell_word'", `yb_col']
+							local cell_t = A["main:`cell_word'", `yt_col']
+							local cell_p = A["main:`cell_word'", `yp_col']
+						}
+						else {
+							local cell_b = A["`cell_word'", `yb_col']
+							local cell_t = A["`cell_word'", `yt_col']
+							local cell_p = A["`cell_word'", `yp_col']
+						}
+						matrix C[`reg_idx', 3*`b_col_idx'-2] = `cell_b'
+						matrix C[`reg_idx', 3*`b_col_idx'-1] = `cell_t'
+						matrix C[`reg_idx', 3*`b_col_idx'] = `cell_p'
+
+						local reg_idx = `reg_idx' + 1
+					}
+				}
+			}
+
+			/* Output results */
+			eststo clear
+ 			ereturn clear
+ 			estimates clear
+
+			local btpsummaryfile : subinstr local exportfile ".csv" "_btp.csv", all
+ 			local btpsummaryfile : subinstr local btpsummaryfile ".rtf" "_btp.rtf", all
+
+			/* For each regression (mat C row) */
+			forval reg_idx = 1/`rcoef_row_len' {
+				local cellname_li = ""
+				forval col_idx = 1/`rcoef_col_len' {
+					matrix C_`reg_idx'_`col_idx' = C[`reg_idx', `col_idx']
+					matrix colnames C_`reg_idx'_`col_idx' = "reg `reg_idx'"
+					quietly: estadd matrix C_`reg_idx'_`col_idx'
+					local cellname_li = "`cellname_li' C_`reg_idx'_`col_idx'(fmt(%12.0g))"
+				}
+				/* If `reg_idx' is 1 & addn contains rcoef: export title */
+				if (`reg_idx' == 1 & strpos("`addn'", "(rcoef)")) {
+					if ("`ttitle'"=="") {
+						local table_title = "Dep [`: word 1 of `anything''] ~ indep [`: word 1 of `indep''] `addn' `extra_addn'"
+					}
+					else {
+						local table_title = "`ttitle' `extra_addn'"
+					}
+					esttab using "`btpsummaryfile'", cells("`cellname_li'") ///
+					collabels(`c_col_name') mlabels(,none) eqlab(,none) title(`table_title') ///
+					append nolines not se compress nogaps noobs plain					
+				}
+				else {
+					esttab using "`btpsummaryfile'", cells("`cellname_li'") ///
+					collabels(,none) mlabels(,none) eqlab(,none) ///
+					append nolines not se compress nogaps noobs plain
+				}
+			}
+		}
+
 	}
 
 	eststo clear

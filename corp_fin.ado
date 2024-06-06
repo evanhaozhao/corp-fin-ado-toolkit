@@ -6,7 +6,7 @@
  * Modified: June 6, 2024
  * Version
  	- regx: 1.6.2 (6jun2024)
-	- eqx: 2.2.0 (30may2024)
+	- eqx: 2.2.1 (6jun2024)
 	- sumx: 1.3.2 (19apr2024)
  */
 ///=============================================================================
@@ -1055,7 +1055,7 @@ program eqx
 			if ("`sigkw'"!="") {
 				local sigopt_args = "`sigopt_args' sigkw(`sigkw')"
 			}
-			regx `anything' if `touse', indep(`indep') `fullopt_args' `sigopt_args' keepvar(`lhsvar' `rhsvar')
+			regx `anything' if `touse', indep(`indep') `fullopt_args' `sigopt_args' keepvar(`lhsvar' `rhsvar') addn("`addn'")
 		}
 	
 		/* estimates store results */
@@ -1100,7 +1100,7 @@ program eqx
 			estadd matrix c`colidx'
 		}
 		esttab using "`exportfile'", cells("`cellnames'") append nolines not se compress nogaps noobs plain ///
-		star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`lhsvar']==[`rhsvar'] `extra_addn'") ///
+		star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`lhsvar']==[`rhsvar'] `addn' `extra_addn'") ///
 		mtitle("[`sigidx' out of `colidxs' columns have significant difference]")
 
 		/* Chi-sq significance table */
@@ -1161,10 +1161,10 @@ program eqx
 					}
 				}
 				if !missing(`numeric_value') {
-					regx `anything' if `subsvar'==`subv' & `touse', indep(`indep') `fullopt_args' `sigopt_args' addn("[`subsvar'==`subv']")
+					regx `anything' if `subsvar'==`subv' & `touse', indep(`indep') `fullopt_args' `sigopt_args' addn("[`subsvar'==`subv'] `addn'")
 				}
 				else {
-					regx `anything' if `subsvar'=="`subv'" & `touse', indep(`indep') `fullopt_args' `sigopt_args' addn("[`subsvar'==`subv']")
+					regx `anything' if `subsvar'=="`subv'" & `touse', indep(`indep') `fullopt_args' `sigopt_args' addn("[`subsvar'==`subv'] `addn'")
 				}
 			}
 			
@@ -1253,7 +1253,7 @@ program eqx
 					estadd matrix c`colidx'
 				}
 				esttab using "`exportfile'", cells("`cellnames'") append nolines not se compress nogaps noobs plain ///
-				star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`eqs_var_x`indeplen''], `subsvar' [=`prsub1'] vs [=`prsub2'] `extra_addn'") ///
+				star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`eqs_var_x`indeplen''], `subsvar' [=`prsub1'] vs [=`prsub2'] `addn' `extra_addn'") ///
 				mtitle("[`sigidx' out of `colidxs' columns have significant difference]")
 
 				/* Chi-sq significance table */
@@ -1333,7 +1333,7 @@ program eqx
 					estadd matrix c`colidx'
 				}
 				esttab using "`exportfile'", cells("`cellnames'") append nolines not se compress nogaps noobs plain ///
-				star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`eqtvar'], `subsvar' [=`prsub1'] vs [=`prsub2'] `extra_addn'") ///
+				star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`eqtvar'], `subsvar' [=`prsub1'] vs [=`prsub2'] `addn' `extra_addn'") ///
 				mtitle("[`sigidx' out of `colidxs' columns have significant difference]")
 
 				/* Chi-sq significance table */
@@ -1383,12 +1383,12 @@ program eqx
 				local sigopt_args_b = "sigout(`sigout'(pair))"
 			}
 			if ("`eqtvar'"=="~") {
-				regx `anything' if `touse', indep(`indep') `fullopt_args' `sigopt_args_a'
-				regx `dep2' if `touse', indep(`indep') `fullopt_args' `sigopt_args_b'
+				regx `anything' if `touse', indep(`indep') `fullopt_args' `sigopt_args_a' addn("`addn'")
+				regx `dep2' if `touse', indep(`indep') `fullopt_args' `sigopt_args_b' addn("`addn'")
 			}
 			else {
-				regx `anything' if `touse', indep(`indep') `fullopt_args' `sigopt_args_a' keepvar(`eqtvar')
-				regx `dep2' if `touse', indep(`indep') `fullopt_args' `sigopt_args_b' keepvar(`eqtvar')
+				regx `anything' if `touse', indep(`indep') `fullopt_args' `sigopt_args_a' keepvar(`eqtvar') addn("`addn'")
+				regx `dep2' if `touse', indep(`indep') `fullopt_args' `sigopt_args_b' keepvar(`eqtvar') addn("`addn'")
 			}
 		}
 
@@ -1453,7 +1453,7 @@ program eqx
                 estadd matrix c`colidx'
             }
             esttab using "`exportfile'", cells("`cellnames'") append nolines not se compress nogaps noobs plain ///
-            star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`eqs_var_x`indeplen''], Dep Var [=`: word 1 of `anything''] vs [=`: word 1 of `dep2''] `extra_addn'") ///
+            star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`eqs_var_x`indeplen''], Dep Var [=`: word 1 of `anything''] vs [=`: word 1 of `dep2''] `addn' `extra_addn'") ///
             mtitle("[`sigidx' out of `colidxs' columns have significant difference]")
 
 			/* Chi-sq significance table */
@@ -1526,7 +1526,7 @@ program eqx
                 estadd matrix c`colidx'
             }
             esttab using "`exportfile'", cells("`cellnames'") append nolines not se compress nogaps noobs plain ///
-            star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`eqtvar'], Dep Var [=`: word 1 of `anything''] vs [=`: word 1 of `dep2''] `extra_addn'") ///
+            star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`eqtvar'], Dep Var [=`: word 1 of `anything''] vs [=`: word 1 of `dep2''] `addn' `extra_addn'") ///
             mtitle("[`sigidx' out of `colidxs' columns have significant difference]")
 
 			/* Chi-sq significance table */

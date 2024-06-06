@@ -3,9 +3,9 @@
  * Project: Programs for corporate finance empirical studies
  * Author: Hao Zhao
  * Created: August 19, 2023
- * Modified: May 30, 2024
+ * Modified: June 6, 2024
  * Version
- 	- regx: 1.6.1 (30may2024)
+ 	- regx: 1.6.2 (6jun2024)
 	- eqx: 2.2.0 (30may2024)
 	- sumx: 1.3.2 (19apr2024)
  */
@@ -57,8 +57,12 @@ program regx, rclass sortpreserve
 		}
 		if ("`absr'"!="") {
 			local cate_absr = ""
+			local cate_absr_idx = 1
 			foreach absrvar in `absr' {
-				local cate_absr = "`cate_absr' i.`absrvar'"
+				if (`cate_absr_idx'!=1) {
+					local cate_absr = "`cate_absr' ibn.`absrvar'"
+				}
+				local cate_absr_idx = `cate_absr_idx' + 1
 			}
 		}
 	}
@@ -467,7 +471,8 @@ program regx, rclass sortpreserve
 				foreach indepvar in `indep' {
 					if ("`inte'"!="") {
 						if ("`chistore'"!="") {
-							reg `depvar' `inte_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' `cate_absr' if `touse'
+							/* reg `depvar' `inte_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' `cate_absr' if `touse' */
+							reg `depvar' `inte_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' `cate_absr' if `touse', absorb(`: word 1 of `absr'')
 							estimates store y`depidx'_x`indepidx'`stosuf'
 						}
 						else {
@@ -478,7 +483,8 @@ program regx, rclass sortpreserve
 					else {
 						if ("`dyn'"!="") {
 							if ("`chistore'"!="") {
-								reg `depvar' `dyn_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' `cate_absr' if `touse'
+								/* reg `depvar' `dyn_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' `cate_absr' if `touse' */
+								reg `depvar' `dyn_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' `cate_absr' if `touse', absorb(`: word 1 of `absr'')
 								estimates store y`depidx'_x`indepidx'`stosuf'
 							}
 							else {
@@ -502,7 +508,8 @@ program regx, rclass sortpreserve
 						}
 						else {
 							if ("`chistore'"!="") {
-								reg `depvar' `indepvar' `ctrl' `rotctrlvar`indepidx'' `cate_absr' if `touse'
+								/* reg `depvar' `indepvar' `ctrl' `rotctrlvar`indepidx'' `cate_absr' if `touse' */
+								reg `depvar' `indepvar' `ctrl' `rotctrlvar`indepidx'' `cate_absr' if `touse', absorb(`: word 1 of `absr'')
 								estimates store y`depidx'_x`indepidx'`stosuf'
 							}
 							else {

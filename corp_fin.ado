@@ -5,7 +5,7 @@
  * Created: August 19, 2023
  * Modified: June 6, 2024
  * Version
- 	- regx: 1.6.2 (6jun2024)
+ 	- regx: 1.6.3 (12nov2024)
 	- eqx: 2.2.1 (6jun2024)
 	- sumx: 1.3.2 (19apr2024)
  */
@@ -19,7 +19,7 @@ program regx, rclass sortpreserve
 	inte(string) clust(namelist) dyn(string) rotctrl(string) tobit(string) ///
 	tnote(string) ttitle(string) addn(string) edir(string) keepvar(string) ///
 	stosuf(string) sigout(string) sigkw(string) rcoefidx(string) ///
-	SIGMAT RCOEF ROTINTE REPORT DISPLAY CHISTORE NOSINGLETON]
+	SIGMAT RCOEF ROTINTE REPORT DISPLAY CHISTORE NOSINGLETON POISSON]
 	
 	marksample touse
 	
@@ -477,7 +477,12 @@ program regx, rclass sortpreserve
 						}
 						else {
 							/* Interaction model */
-							eststo: reghdfe `depvar' `inte_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', absorb(`absr') vce(`cse') `singletonset'
+							if ("`poisson'"!="") {
+								eststo: ppmlhdfe `depvar' `inte_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', absorb(`absr') vce(`cse') `singletonset'
+							}
+							else {
+								eststo: reghdfe `depvar' `inte_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', absorb(`absr') vce(`cse') `singletonset'
+							}
 						}
 					}
 					else {
@@ -489,10 +494,20 @@ program regx, rclass sortpreserve
 							}
 							else {
 								/* dynamic effect model & plot */
-								eststo: reghdfe `depvar' `dyn_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', absorb(`absr') vce(`cse') `singletonset'
+								if ("`poisson'"!="") {
+									eststo: ppmlhdfe `depvar' `dyn_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', absorb(`absr') vce(`cse') `singletonset'
+								}
+								else {
+									eststo: reghdfe `depvar' `dyn_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', absorb(`absr') vce(`cse') `singletonset'
+								}
 								if (`if_dyn_plot'==1) {
 									quietly {
-										reghdfe `depvar' `dyn_plotlist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', absorb(`absr') vce(`cse') `singletonset'
+										if ("`poisson'"!="") {
+											ppmlhdfe `depvar' `dyn_plotlist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', absorb(`absr') vce(`cse') `singletonset'
+										}
+										else {
+											reghdfe `depvar' `dyn_plotlist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', absorb(`absr') vce(`cse') `singletonset'
+										}
 										coefplot, keep(c.*#c.*) vertical omitted base levels(`dyn_ci') ///
 										rename(`dyn_rename', regex) order(`dyn_reorder') ///
 										mcolor("0 191 255") ciopts(lcolor("0 97 154") recast(rcap)) ///
@@ -514,7 +529,12 @@ program regx, rclass sortpreserve
 							}
 							else {
 								/* standard model with FEs absorbed */
-								eststo: reghdfe `depvar' `indepvar' `ctrl' `rotctrlvar`indepidx'' if `touse', absorb(`absr') vce(`cse') `singletonset'
+								if ("`poisson'"!="") {
+									eststo: ppmlhdfe `depvar' `indepvar' `ctrl' `rotctrlvar`indepidx'' if `touse', absorb(`absr') vce(`cse') `singletonset'
+								}
+								else {
+									eststo: reghdfe `depvar' `indepvar' `ctrl' `rotctrlvar`indepidx'' if `touse', absorb(`absr') vce(`cse') `singletonset'
+								}
 							}
 						}
 					}
@@ -537,6 +557,9 @@ program regx, rclass sortpreserve
 							if ("`tobit'"!="") {
 								eststo: tobit `depvar' `inte_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', `tobit_bound' vce(`cse')
 							}
+							else if ("`poisson'"!="") {
+								eststo: poisson `depvar' `inte_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', vce(`cse')
+							}
 							else {
 								eststo: reg `depvar' `inte_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', vce(`cse')
 							}
@@ -552,6 +575,9 @@ program regx, rclass sortpreserve
 								if ("`tobit'"!="") {
 									eststo: tobit `depvar' `dyn_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', `tobit_bound' vce(`cse')
 								}
+								else if ("`poisson'"!="") {
+									eststo: poisson `depvar' `dyn_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', vce(`cse')
+								}
 								else {
 									eststo: reg `depvar' `dyn_reglist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', vce(`cse')
 								}
@@ -559,6 +585,9 @@ program regx, rclass sortpreserve
 									quietly {
 										if ("`tobit'"!="") {
 											tobit `depvar' `dyn_plotlist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', `tobit_bound' vce(`cse')
+										}
+										else if ("`poisson'"!="") {
+											poisson `depvar' `dyn_plotlist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', vce(`cse')
 										}
 										else {
 											reg `depvar' `dyn_plotlist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', vce(`cse')
@@ -584,6 +613,9 @@ program regx, rclass sortpreserve
 							else {
 								if ("`tobit'"!="") {
 									eststo: tobit `depvar' `indepvar' `ctrl' `rotctrlvar`indepidx'' if `touse', `tobit_bound' vce(`cse')
+								}
+								else if ("`poisson'"!="") {
+									eststo: poisson `depvar' `indepvar' `ctrl' `rotctrlvar`indepidx'' if `touse', vce(`cse')
 								}
 								else {
 									eststo: reg `depvar' `indepvar' `ctrl' `rotctrlvar`indepidx'' if `touse', vce(`cse')

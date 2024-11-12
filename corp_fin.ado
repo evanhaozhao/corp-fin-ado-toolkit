@@ -5,7 +5,7 @@
  * Created: August 19, 2023
  * Modified: June 6, 2024
  * Version
- 	- regx: 1.6.3 (12nov2024)
+ 	- regx: 1.6.4 (12nov2024)
 	- eqx: 2.2.1 (6jun2024)
 	- sumx: 1.3.2 (19apr2024)
  */
@@ -784,7 +784,7 @@ program regx, rclass sortpreserve
 						}
 					}
 					local cell_word : word `b_col_idx' of `col_items'
-					if ("`tobit'"!="") {
+					if ("`tobit'"!="" | ("`poisson'"!="" & "`absr'"=="")) {
 						local cell_coef = A["main:`cell_word'", `yb_col']
 					}
 					else {
@@ -796,7 +796,7 @@ program regx, rclass sortpreserve
 					else if (`cell_coef' > 0) {
 						local agg_sign = `agg_sign' + 1
 					}
-					if ("`tobit'"!="") {
+					if ("`tobit'"!="" | ("`poisson'"!="" & "`absr'"=="")) {
 						local cell_sig_cnt = A["main:`cell_word'", `yp_col']
 					}
 					else {
@@ -928,7 +928,7 @@ program regx, rclass sortpreserve
 							}
 						}
 						local cell_word : word `b_col_idx' of `col_items'
-						if ("`tobit'"!="") {
+						if ("`tobit'"!="" | ("`poisson'"!="" & "`absr'"=="")) {
 							local cell_b = A["main:`cell_word'", `yb_col']
 							local cell_t = A["main:`cell_word'", `yt_col']
 							local cell_p = A["main:`cell_word'", `yp_col']

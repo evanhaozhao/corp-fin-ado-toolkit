@@ -435,7 +435,7 @@ program regx, rclass sortpreserve
 									quietly {
 										xtreg `depvar' `dyn_plotlist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', `xteffect' vce(`cse')
 										coefplot, keep(c.*#c.*) vertical omitted base levels(`dyn_ci') ///
-										rename(`"`dyn_rename'"', regex) order(`"`dyn_reorder'"') ///
+										rename(`dyn_rename', regex) order(`dyn_reorder') ///
 										mcolor("0 191 255") ciopts(lcolor("0 97 154") recast(rcap)) ///
 										yline(0, lcolor("179 134 0") lpattern(dash)) ///
 										graphregion(fcolor(white) ifcolor(white) ilcolor(white)) ///
@@ -593,7 +593,7 @@ program regx, rclass sortpreserve
 											reg `depvar' `dyn_plotlist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', vce(`cse')
 										}
 										coefplot, keep(c.*#c.*) vertical omitted base levels(`dyn_ci') ///
-										rename(`"`dyn_rename'"', regex) order(`"`dyn_reorder'"') ///
+										rename(`dyn_rename', regex) order(`dyn_reorder') ///
 										mcolor("0 191 255") ciopts(lcolor("0 97 154") recast(rcap)) ///
 										yline(0, lcolor("179 134 0") lpattern(dash)) ///
 										graphregion(fcolor(white) ifcolor(white) ilcolor(white)) ///

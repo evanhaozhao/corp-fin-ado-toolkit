@@ -5,7 +5,7 @@
  * Created: August 19, 2023
  * Modified: June 6, 2024
  * Version
- 	- regx: 1.6.4 (12nov2024)
+ 	- regx: 1.6.5 (15nov2024)
 	- eqx: 2.2.1 (6jun2024)
 	- sumx: 1.3.2 (19apr2024)
  */

@@ -6,7 +6,7 @@
  * Modified: June 6, 2024
  * Version
  	- regx: 1.6.5 (15nov2024)
-	- eqx: 2.2.1 (6jun2024)
+	- eqx: 2.2.2 (25nov2024)
 	- sumx: 1.3.2 (19apr2024)
  */
 ///=============================================================================
@@ -1023,8 +1023,13 @@ program eqx
 	local fullopt_args = ""
 	foreach opt in ctrl absr xtp inte clust dyn rotctrl tnote ttitle edir report rotinte {
 		if ("``opt''"!="") {
-			local `opt'_arg = "`opt'(``opt'')"
-			local fullopt_args = "`fullopt_args' ``opt'_arg'"
+			if ("``opt''"!="report" & "``opt''"!="rotinte") {
+				local `opt'_arg = "`opt'(``opt'')"
+				local fullopt_args = "`fullopt_args' ``opt'_arg'"
+			}
+			else {
+				local fullopt_args = "`fullopt_args' ``opt''"
+			}
 		}
 	}
  	/* significant output options */
@@ -1084,7 +1089,7 @@ program eqx
 		
 		/* export the results at the same time */
 		if ("`export'"!="") {
-			if ("`sigkw'"!="") {
+			if ("`sigkw'"!="" & "`sigout'"!="") {
 				local sigopt_args = "`sigopt_args' sigkw(`sigkw')"
 			}
 			regx `anything' if `touse', indep(`indep') `fullopt_args' `sigopt_args' keepvar(`lhsvar' `rhsvar') addn("`addn'")
@@ -1176,7 +1181,7 @@ program eqx
 			local numeric_value = real("`subv'")
 			/* export tables */
 			if ("`export'"!="") {
-				if ("`sigkw'"!="") {
+				if ("`sigkw'"!="" & "`sigout'"!="") {
 					if (`subvidx'==1) {
 						local sigopt_args = "sigout(`sigout') sigkw(`sigkw')"
 					}
@@ -1184,7 +1189,7 @@ program eqx
 						local sigopt_args = "sigout(`sigout'(`subv')) sigkw(`sigkw')"
 					}
 				}
-				else {
+				else if ("`sigkw'"=="" & "`sigout'"!="") {
 					if (`subvidx'==1) {
 						local sigopt_args = "sigout(`sigout')"
 					}
@@ -1406,11 +1411,11 @@ program eqx
 
         /* export the results at the same time */
         if ("`export'"!="") {
-			if ("`sigkw'"!="") {
+			if ("`sigkw'"!="" & "`sigout'"!="") {
 				local sigopt_args_a = "sigout(`sigout') sigkw(`sigkw')"
 				local sigopt_args_b = "sigout(`sigout'(pair)) sigkw(`sigkw')"
 			}
-			else {
+			else if ("`sigkw'"=="" & "`sigout'"!="") {
 				local sigopt_args_a = "sigout(`sigout')"
 				local sigopt_args_b = "sigout(`sigout'(pair))"
 			}

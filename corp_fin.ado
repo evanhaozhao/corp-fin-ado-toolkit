@@ -5,9 +5,9 @@
  * Created: August 19, 2023
  * Modified: June 6, 2024
  * Version
- 	- regx: 1.6.5 (15nov2024)
-	- eqx: 2.2.2 (25nov2024)
-	- sumx: 1.3.2 (19apr2024)
+ 	- regx: 1.6.6 (26dec2024)
+	- eqx: 2.2.3 (26dec2024)
+	- sumx: 1.3.3 (26dec2024)
  */
 ///=============================================================================
 /* regx -> regressions to output tables */
@@ -30,7 +30,7 @@ program regx, rclass sortpreserve
 	}
 	else {
 		if ("${dir_table_flow}"=="") {
-			display "[ERROR] Need to set a directory in [edir] or global ${dir_table_flow}"
+			display in red "[ERROR] Need to set a directory in [edir] or global ${dir_table_flow}"
 			exit
 		}
 		else {
@@ -49,10 +49,10 @@ program regx, rclass sortpreserve
 	/* `suest` does not support xtreg random effect; the estimation of xtreg fe is done by reg..absorb */
 	if ("`chistore'"!="") {
 		if ("`xtp'"!="") {
-			display "[WARNING] `suest` does not support xtreg"
+			display in red "[WARNING] `suest` does not support xtreg"
 		}
 		if ("`display'"=="") {
-			display "[ERROR] [chistore] must be used with [display]"
+			display in red "[ERROR] [chistore] must be used with [display]"
 			exit
 		}
 		if ("`absr'"!="") {
@@ -70,7 +70,7 @@ program regx, rclass sortpreserve
 	/* Tobit model: cannot use [absr] */
 	if ("`tobit'"!="") {
 		if ("`absr'"!="" | "`xtp'"!="") {
-			display "[ERROR] [tobit] cannot be used with [xtp] or [absr]"
+			display in red "[ERROR] [tobit] cannot be used with [xtp] or [absr]"
 			exit
 		}
 		else {
@@ -122,7 +122,7 @@ program regx, rclass sortpreserve
 	/* Rotating control variables */
 	if ("`rotctrl'"!="") {
 		if (`: word count `rotctrl''!=`: word count `indep'') {
-			display "[ERROR] [rotctrl] number of rotating control vars must equal number of indep vars"
+			display in red "[ERROR] [rotctrl] number of rotating control vars must equal number of indep vars"
 			exit
 		}
 		else {
@@ -200,7 +200,7 @@ program regx, rclass sortpreserve
 						tuples `new_sets'
 					}
 					else {
-						display "[ERROR] Need to ssc install `tuples`"
+						display in red "[ERROR] Need to ssc install `tuples`"
 						exit
 					}
 				}
@@ -274,7 +274,7 @@ program regx, rclass sortpreserve
 	/* dynamic regression */
 	if ("`dyn'"!="") {
 		if ("`inte'"!="") {
-			display "[ERROR] Cannot use option [dyn] and [inte] at the same time"
+			display in red "[ERROR] Cannot use option [dyn] and [inte] at the same time"
 			exit
 		}
 		else {
@@ -329,7 +329,7 @@ program regx, rclass sortpreserve
 			local dyn_start = min(`: subinstr local dyn_year "/" ", ", all')
 			local dyn_end = max(`: subinstr local dyn_year "/" ", ", all')
 			if (`dyn_bench'<`dyn_start' | `dyn_bench'>`dyn_end') {
-				display "[ERROR] Benchmark (`dyn_bench') is out of range [`dyn_year']"
+				display in red "[ERROR] Benchmark (`dyn_bench') is out of range [`dyn_year']"
 				exit
 			}
 			/* set interaction list for regression: `dyn_vars' (full) `dyn_regvars' (drop bench) */
@@ -357,7 +357,7 @@ program regx, rclass sortpreserve
 			foreach dyn_v in `dyn_regvars' {
 				capture confirm variable `dyn_v', exact
 				if (_rc!=0) {
-					display "[ERROR] Need to generate dynamic indicator `dyn_v'"
+					display in red "[ERROR] Need to generate dynamic indicator `dyn_v'"
 					exit
 				}
 			}
@@ -390,14 +390,14 @@ program regx, rclass sortpreserve
 	if ("`xtp'"!="") {
 		if ("`absr'"!="") {
 			/* no absorb allowed in xtreg setting */
-			display "[ERROR] No [absorb] option allowed for xtreg"
+			display in red "[ERROR] No [absorb] option allowed for xtreg"
 			exit
 		}
 		else {
 			/* _r_effect: random effect */
 			if (strpos("`xtp'", " _r_effect")>0) {
 				if ("`chistore'"!="") {
-					display "[ERROR] `suest` does not support xtreg random effect"
+					display in red "[ERROR] `suest` does not support xtreg random effect"
 				}
 				local xteffect = "re"
 				local xtpanel: subinstr local xtp " _r_effect" "", all
@@ -870,7 +870,7 @@ program regx, rclass sortpreserve
 	/* Export regression b, t, and p */
 	if ("`rcoef'" != "") {
 		if ("`sigmat'"!="" | "`sigout'"!="") {
-			di "Cannot use option sigmat/sigout with option rcoef"
+			display in red "Cannot use option sigmat/sigout with option rcoef"
 			exit
 		}
 		else {
@@ -1072,7 +1072,7 @@ program eqx
 	}
 	else {
 		if ("${dir_table_flow}"=="") {
-			display "[ERROR] Need to set a directory in [edir] or global ${dir_table_flow}"
+			display in red "[ERROR] Need to set a directory in [edir] or global ${dir_table_flow}"
 			exit
 		}
 		else {
@@ -1596,7 +1596,7 @@ program eqx
         }
     }
 	else {
-		display "[ERROR] Wrong input"
+		display in red "[ERROR] Wrong input"
 		exit
 	}
 
@@ -1629,11 +1629,11 @@ program sumx, sortpreserve
 	/* tgroup */
 	if ("`tgroup'" != "") {
 		if ("`category'" != "") {
-			display "[Error] category cannot be used with tgroup"
+			display in red "[Error] category cannot be used with tgroup"
 			exit
 		}
 		if ("`tvar'" != "") {
-			display "[Error] tvar cannot be used with tgroup"
+			display in red "[Error] tvar cannot be used with tgroup"
 			exit
 		}
 		eststo clear
@@ -1643,7 +1643,7 @@ program sumx, sortpreserve
 		levelsof `tgroup', local(tdummies)
 		local n_dummy : word count `tdummies'
 		if (`n_dummy' != 2) {
-			display "[Error] input of tgroup must be a binary variable"
+			display in red "[Error] input of tgroup must be a binary variable"
 		}
 		else {
 			foreach group in `tdummies' {
@@ -1717,12 +1717,12 @@ program sumx, sortpreserve
 	/* tvar */
 	if ("`tvar'" != "") {
 		if ("`category'" != "") {
-			display "[Error] category cannot be used with tvar"
+			display in red "[Error] category cannot be used with tvar"
 			exit
 		}
 		local n_tvar : word count `tvar'
 		if (`n_tvar' != `var_len') {
-			display "[Error] The number of paired variables should equal to the number of variables"
+			display in red "[Error] The number of paired variables should equal to the number of variables"
 			exit
 		}
 		else {
@@ -1844,7 +1844,7 @@ program sumx, sortpreserve
 	}
 	else if ("`category'" != "") {
 		if `var_len' != 1 {
-			display "[ERROR] Only one input variable allowed"
+			display in red "[ERROR] Only one input variable allowed"
 			exit
 		}
 		else {

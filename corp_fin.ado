@@ -5,7 +5,7 @@
  * Created: August 19, 2023
  * Modified: June 6, 2024
  * Version
- 	- regx: 1.7.1 (31dec2024)
+ 	- regx: 1.7.2 (31dec2024)
 	- eqx: 2.2.3 (26dec2024)
 	- sumx: 1.3.3 (26dec2024)
  */
@@ -677,6 +677,9 @@ program regx, rclass sortpreserve
 			else {
 				if ("`dyn'"!="") {
 					local var_order = "`rename' `reorderinte' `rotctrl'"
+				}
+				else {
+					local var_order = "`rename' `rotctrl'"
 				}
 			}			
 		}

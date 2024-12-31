@@ -5,7 +5,7 @@
  * Created: August 19, 2023
  * Modified: June 6, 2024
  * Version
- 	- regx: 1.6.6 (26dec2024)
+ 	- regx: 1.7.1 (31dec2024)
 	- eqx: 2.2.3 (26dec2024)
 	- sumx: 1.3.3 (26dec2024)
  */
@@ -18,7 +18,7 @@ program regx, rclass sortpreserve
 	syntax anything [if] [in] , indep(namelist) [ctrl(string) absr(string) xtp(string) ///
 	inte(string) clust(namelist) dyn(string) rotctrl(string) tobit(string) ///
 	tnote(string) ttitle(string) addn(string) edir(string) keepvar(string) ///
-	stosuf(string) sigout(string) sigkw(string) rcoefidx(string) ///
+	stosuf(string) sigout(string) sigkw(string) rcoefidx(string) rename(string) ///
 	SIGMAT RCOEF ROTINTE REPORT DISPLAY CHISTORE NOSINGLETON POISSON]
 	
 	marksample touse
@@ -646,7 +646,42 @@ program regx, rclass sortpreserve
 				local var_order = "`indep' `rotctrl'"
 			}
 		}
-		
+
+		/* Rename explanatory variables to the same name, for horizontal alignment reason */
+		if ("`rename'" != "") {
+			foreach ordered_var in `var_order' {
+				foreach indepvar in `indep' {
+					if (strpos("`ordered_var'", "`indepvar'")) {
+						local new_name : subinstr local ordered_var "`indepvar'" "`rename'", all
+						local rename_str `rename_str' `ordered_var' `new_name'
+					}
+				}
+			}
+			/* Adjust ordering */
+			if ("`orderinte'" != "") {
+				local reorderinte = "`orderinte'"
+				foreach reorderinte_var in `reorderinte' {
+					foreach indepvar in `indep' {
+						if (strpos("`reorderinte_var'", "c.`indepvar'") & !strpos("`reorderinte'", "c.`rename'")) {
+							local reorderinte : subinstr local reorderinte "c.`indepvar'" "c.`rename'", all
+						}
+						else if (strpos("`reorderinte_var'", "c.`indepvar'") & strpos("`reorderinte'", "c.`rename'")) {
+							local reorderinte : subinstr local reorderinte "`reorderinte_var'" "", all
+						}
+					}
+				}
+			}
+			if ("`inte'"!="") {
+				local var_order = "`rename' `reorderinte' `rotctrl' c.*"
+			}
+			else {
+				if ("`dyn'"!="") {
+					local var_order = "`rename' `reorderinte' `rotctrl'"
+				}
+			}			
+		}
+		di "`var_order'"
+
 		/* (2) Column names: `" `colname' "' */
 		local jnum : word count `anything'
 		local inum : word count `indep'
@@ -706,7 +741,7 @@ program regx, rclass sortpreserve
 		if ("`report'"!="") {
 			/* no drop */
 			esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
-			stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label')) rename(_cons "Constant") ///
+			stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label')) rename(_cons "Constant" `rename_str') ///
 			order(`var_order' `ctrl') mtitles(`colname') title("`table_title'") note("`table_note'")
 		}
 		else {
@@ -716,13 +751,13 @@ program regx, rclass sortpreserve
 				}
 				/* keep selected variables */
 				esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
-				drop(`drop_ctrl') stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label')) rename(_cons "Constant") ///
+				drop(`drop_ctrl') stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label')) rename(_cons "Constant" `rename_str') ///
 				order(`var_order' `keepvar') mtitles(`colname') title("`table_title'") note("`table_note'")			
 			}
 			else {
 				/* drop control */
 				esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
-				drop(`drop_ctrl') stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label')) rename(_cons "Constant") ///
+				drop(`drop_ctrl') stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label')) rename(_cons "Constant" `rename_str') ///
 				order(`var_order') mtitles(`colname') title("`table_title'") note("`table_note'")
 			}
 		}

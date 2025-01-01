@@ -5,8 +5,8 @@
  * Created: August 19, 2023
  * Modified: June 6, 2024
  * Version
- 	- regx: 1.7.2 (31dec2024)
-	- eqx: 2.2.3 (26dec2024)
+ 	- regx: 1.7.3 (1jan2025)
+	- eqx: 2.2.4 (1jan2025)
 	- sumx: 1.3.3 (26dec2024)
  */
 ///=============================================================================
@@ -683,7 +683,6 @@ program regx, rclass sortpreserve
 				}
 			}			
 		}
-		di "`var_order'"
 
 		/* (2) Column names: `" `colname' "' */
 		local jnum : word count `anything'
@@ -1144,7 +1143,13 @@ program eqx
 				matrix c`colidx' = J(1, 3, 0)
 				matrix colnames c`colidx' = "Chi-sq" "P-value" "Sig(0/*/**/***)"
 				
-				quietly: suest y`depidx'_x`indepidx', vce(`cse')
+				/* Temporary solution for suest not being able to process multi-level SE clustering */
+				if (`: word count `cse'' >= 3 & strpos("`cse'", "cluster ")) {
+					quietly: suest y`depidx'_x`indepidx', vce(robust)
+				}
+				else {
+					quietly: suest y`depidx'_x`indepidx', vce(`cse')
+				}
 				test [mean]`lhsvar' = [mean]`rhsvar'
 				
 				matrix c`colidx'[1, 1] = r(chi2)
@@ -1298,7 +1303,12 @@ program eqx
 						matrix c`colidx' = J(1, 3, 0)
 						matrix colnames c`colidx' = "Chi-sq" "P-value" "Sig(0/*/**/***)"
 						
-						quietly: suest y`depidx'_x`indepidx'_s`_kw_`prsub1'' y`depidx'_x`indepidx'_s`_kw_`prsub2'', vce(`cse')
+						if (`: word count `cse'' >= 3 & strpos("`cse'", "cluster ")) {
+							quietly: suest y`depidx'_x`indepidx'_s`_kw_`prsub1'' y`depidx'_x`indepidx'_s`_kw_`prsub2'', vce(robust)
+						}
+						else {
+							quietly: suest y`depidx'_x`indepidx'_s`_kw_`prsub1'' y`depidx'_x`indepidx'_s`_kw_`prsub2'', vce(`cse')
+						}
 						test [y`depidx'_x`indepidx'_s`_kw_`prsub1''_mean]`eqs_var_x`indepidx'' = [y`depidx'_x`indepidx'_s`_kw_`prsub2''_mean]`eqs_var_x`indepidx''
 						
 						matrix c`colidx'[1, 1] = r(chi2)
@@ -1378,7 +1388,12 @@ program eqx
 						matrix c`colidx' = J(1, 3, 0)
 						matrix colnames c`colidx' = "Chi-sq" "P-value" "Sig(0/*/**/***)"
 						
-						quietly: suest y`depidx'_x`indepidx'_s`_kw_`prsub1'' y`depidx'_x`indepidx'_s`_kw_`prsub2'', vce(`cse')
+						if (`: word count `cse'' >= 3 & strpos("`cse'", "cluster ")) {
+							quietly: suest y`depidx'_x`indepidx'_s`_kw_`prsub1'' y`depidx'_x`indepidx'_s`_kw_`prsub2'', vce(robust)
+						}
+						else {
+							quietly: suest y`depidx'_x`indepidx'_s`_kw_`prsub1'' y`depidx'_x`indepidx'_s`_kw_`prsub2'', vce(`cse')
+						}
 						test [y`depidx'_x`indepidx'_s`_kw_`prsub1''_mean]`eqtvar' = [y`depidx'_x`indepidx'_s`_kw_`prsub2''_mean]`eqtvar'
 						
 						matrix c`colidx'[1, 1] = r(chi2)
@@ -1497,7 +1512,12 @@ program eqx
                     matrix c`colidx' = J(1, 3, 0)
                     matrix colnames c`colidx' = "Chi-sq" "P-value" "Sig(0/*/**/***)"
 
-                    quietly: suest y`depidx'_x`indepidx'_s1 y`depidx'_x`indepidx'_s2, vce(`cse')
+					if (`: word count `cse'' >= 3 & strpos("`cse'", "cluster ")) {
+						quietly: suest y`depidx'_x`indepidx'_s1 y`depidx'_x`indepidx'_s2, vce(robust)
+					}
+					else {
+                    	quietly: suest y`depidx'_x`indepidx'_s1 y`depidx'_x`indepidx'_s2, vce(`cse')
+					}
                     test [y`depidx'_x`indepidx'_s1_mean]`eqs_var_x`indepidx'' = [y`depidx'_x`indepidx'_s2_mean]`eqs_var_x`indepidx''
 
                     matrix c`colidx'[1, 1] = r(chi2)
@@ -1570,7 +1590,12 @@ program eqx
                     matrix c`colidx' = J(1, 3, 0)
                     matrix colnames c`colidx' = "Chi-sq" "P-value" "Sig(0/*/**/***)"
 
-                    quietly: suest y`depidx'_x`indepidx'_s1 y`depidx'_x`indepidx'_s2, vce(`cse')
+					if (`: word count `cse'' >= 3 & strpos("`cse'", "cluster ")) {
+						quietly: suest y`depidx'_x`indepidx'_s1 y`depidx'_x`indepidx'_s2, vce(robust)
+					}
+					else {
+                    	quietly: suest y`depidx'_x`indepidx'_s1 y`depidx'_x`indepidx'_s2, vce(`cse')
+					}
                     test [y`depidx'_x`indepidx'_s1_mean]`eqtvar' = [y`depidx'_x`indepidx'_s2_mean]`eqtvar'
 
                     matrix c`colidx'[1, 1] = r(chi2)

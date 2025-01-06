@@ -5,7 +5,7 @@
  * Created: August 19, 2023
  * Modified: June 6, 2024
  * Version
- 	- regx: 1.7.3 (1jan2025)
+ 	- regx: 1.7.4 (6jan2025)
 	- eqx: 2.2.4 (1jan2025)
 	- sumx: 1.3.3 (26dec2024)
  */
@@ -884,7 +884,7 @@ program regx, rclass sortpreserve
 				estadd matrix B_`col_idx'
 				local cellname_li = "`cellname_li' B_`col_idx'(fmt(%9.0f))"
 			}
-			if ("`sigout'"=="1" | "`sigout'"=="baseline" | "`sigout'"=="`sigkw'") {
+			if ("`sigout'"=="1" | "`sigout'"=="baseline" | "`sigout'"=="`sigkw'" | "`sigkw'"=="_printtitle_") {
 				if ("`ttitle'"=="") {
 					local table_title = "Dep [`: word 1 of `anything''] ~ indep [`: word 1 of `indep''] `addn' `extra_addn'"
 				}

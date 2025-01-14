@@ -1,0 +1,7 @@
+------------------------------------------------
+Package     Description                     Date
+------------------------------------------------
+regx        Regression enhancements         6 Jan 2025
+eqx         Equation solver extensions      1 Jan 2025
+sumx        Advanced summary statistics     26 Dec 2024
+------------------------------------------------

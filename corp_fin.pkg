@@ -1,10 +1,9 @@
-/*
- * Project: Programs for corporate finance empirical studies
- * Author: Hao Zhao
- * Created: August 19, 2023
- * Modified: June 6, 2024
- * Version
- 	- regx: 1.7.4 (6jan2025)
-	- eqx: 2.2.4 (1jan2025)
-	- sumx: 1.3.3 (26dec2024)
- */
+d  Project: Programs for corporate finance empirical studies
+d  Author: Hao Zhao
+d  Created: August 19, 2023
+d  Modified: June 6, 2024
+d  Version
+d	- regx: 1.7.4 (6jan2025)
+d	- eqx: 2.2.4 (1jan2025)
+d	- sumx: 1.3.3 (26dec2024)
+f corp_fin.ado

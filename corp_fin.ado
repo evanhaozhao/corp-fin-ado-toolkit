@@ -6,7 +6,7 @@
  * Modified: June 6, 2024
  * Version
  	- regx: 1.7.4 (6jan2025)
-	- eqx: 2.2.4 (1jan2025)
+	- eqx: 2.2.5 (16jan2025)
 	- sumx: 1.3.3 (26dec2024)
  */
 ///=============================================================================
@@ -1052,13 +1052,13 @@ program eqx
 
 	syntax anything [if] [in] , indep(namelist) eqt(string) [ctrl(string) absr(string) xtp(string) ///
 	inte(string) clust(namelist) dyn(string) rotctrl(string) dep2(string) ///
-	tnote(string) ttitle(string) addn(string) edir(string) sigout(string) sigkw(string) ROTINTE REPORT EXPORT]
+	tnote(string) ttitle(string) addn(string) edir(string) sigout(string) sigkw(string) rename(string) ROTINTE REPORT EXPORT]
 	
 	marksample touse
 	
 	/* restore arguments for regx */
 	local fullopt_args = ""
-	foreach opt in ctrl absr xtp inte clust dyn rotctrl tnote ttitle edir report rotinte {
+	foreach opt in ctrl absr xtp inte clust dyn rotctrl tnote ttitle edir report rotinte rename {
 		if ("``opt''"!="") {
 			if ("``opt''"!="report" & "``opt''"!="rotinte") {
 				local `opt'_arg = "`opt'(``opt'')"

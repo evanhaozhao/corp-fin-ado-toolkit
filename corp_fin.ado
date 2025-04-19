@@ -3,11 +3,11 @@
  * Project: Programs for corporate finance empirical studies
  * Author: Hao Zhao
  * Created: August 19, 2023
- * Modified: January 16, 2025
+ * Modified: April 19, 2025
  * Version
- 	- regx: 1.7.4 (6jan2025)
+ 	- regx: 1.7.5 (19apr2025)
 	- eqx: 2.2.5 (16jan2025)
-	- sumx: 1.3.3 (26dec2024)
+	- sumx: 1.3.4 (19apr2025)
  */
 ///=============================================================================
 /* regx -> regressions to output tables */
@@ -436,11 +436,11 @@ program regx, rclass sortpreserve
 										xtreg `depvar' `dyn_plotlist`indepidx'' `ctrl' `rotctrlvar`indepidx'' if `touse', `xteffect' vce(`cse')
 										coefplot, keep(c.*#c.*) vertical omitted base levels(`dyn_ci') ///
 										rename(`dyn_rename', regex) order(`dyn_reorder') ///
-										mcolor("0 191 255") ciopts(lcolor("0 97 154") recast(rcap)) ///
-										yline(0, lcolor("179 134 0") lpattern(dash)) ///
+										mcolor("90 106 115") ciopts(lcolor("90 106 115") recast(rcap)) ///
+										yline(0, lcolor("130 0 0") lpattern(dash)) ///
 										graphregion(fcolor(white) ifcolor(white) ilcolor(white)) ///
 										xtitle(`dyn_plot') ytitle("Coefficient estimates") ///
-										ysize(5) xsize(8)
+										ysize(4) xsize(8)
 										graph export "`dyn_pdir'/`indepidx'_`depvar'_`dyn_kw'.pdf", replace
 										graph close
 									}
@@ -510,11 +510,11 @@ program regx, rclass sortpreserve
 										}
 										coefplot, keep(c.*#c.*) vertical omitted base levels(`dyn_ci') ///
 										rename(`dyn_rename', regex) order(`dyn_reorder') ///
-										mcolor("0 191 255") ciopts(lcolor("0 97 154") recast(rcap)) ///
-										yline(0, lcolor("179 134 0") lpattern(dash)) ///
+										mcolor("90 106 115") ciopts(lcolor("90 106 115") recast(rcap)) ///
+										yline(0, lcolor("130 0 0") lpattern(dash)) ///
 										graphregion(fcolor(white) ifcolor(white) ilcolor(white)) ///
 										xtitle(`dyn_plot') ytitle("Coefficient estimates") ///
-										ysize(5) xsize(8)
+										ysize(4) xsize(8)
 										graph export "`dyn_pdir'/`indepidx'_`depvar'_`dyn_kw'.pdf", replace
 										graph close
 									}
@@ -594,11 +594,11 @@ program regx, rclass sortpreserve
 										}
 										coefplot, keep(c.*#c.*) vertical omitted base levels(`dyn_ci') ///
 										rename(`dyn_rename', regex) order(`dyn_reorder') ///
-										mcolor("0 191 255") ciopts(lcolor("0 97 154") recast(rcap)) ///
-										yline(0, lcolor("179 134 0") lpattern(dash)) ///
+										mcolor("90 106 115") ciopts(lcolor("90 106 115") recast(rcap)) ///
+										yline(0, lcolor("130 0 0") lpattern(dash)) ///
 										graphregion(fcolor(white) ifcolor(white) ilcolor(white)) ///
 										xtitle(`dyn_plot') ytitle("Coefficient estimates") ///
-										ysize(5) xsize(8)
+										ysize(4) xsize(8)
 										graph export "`dyn_pdir'/`indepidx'_`depvar'_`dyn_kw'.pdf", replace
 										graph close
 									}
@@ -1675,7 +1675,7 @@ capture program drop sumx
 program sumx, sortpreserve
 
 	syntax anything [if] [in], deci(numlist) edir(string) [category(string) tgroup(string) tvar(string) ///
-	ttitle(string) addn(string) RLABEL TTEST]
+	ttitle(string) addn(string) RLABEL TTEST PRESENT]
 	
 	marksample touse
 
@@ -1709,6 +1709,7 @@ program sumx, sortpreserve
 			display in red "[Error] input of tgroup must be a binary variable"
 		}
 		else {
+			local grpdumidx = 1
 			foreach group in `tdummies' {
 				matrix sum_stat = J(`var_len', 8, 0)
 				matrix colnames sum_stat = "Obs" "Mean" "Std.Dev." "Min" "p25" "Median" "p75" "Max"
@@ -1749,28 +1750,59 @@ program sumx, sortpreserve
 					matrix sum_stat[`i',8] = round(r(max), `deci')
 					local i = `i'+ 1
 				}
-				mat2txt, matrix(sum_stat) saving("`edir'") title("`table_title' (`tgroup'=`group')") append
+				matrix summatrix`grpdumidx' = sum_stat
+				if "`onlyt'" == "" {
+					mat2txt, matrix(sum_stat) saving("`edir'") title("`table_title' (`tgroup'=`group')") append
+				}
+				local grpdumidx = `grpdumidx' + 1
 			}
 			estimates clear
 			ereturn clear
-
+			
 			estpost ttest `anything' if `touse', by(`tgroup')
-			matrix ttest_stat = J(`var_len', 4, 0)
-			matrix colnames ttest_stat = "Diff" "Std.Err." "P-value" "N"
-			matrix rownames ttest_stat = `rowname_li'
-			local i = 1
-			foreach var in `anything' {
-				local e_b = e(b)[1, "`var'"]
-				matrix ttest_stat[`i',1] = round(`e_b', `deci')
-				local e_se = e(se)[1, "`var'"]
-				matrix ttest_stat[`i',2] = round(`e_se', `deci')
-				local e_p = e(p)[1, "`var'"]
-				matrix ttest_stat[`i',3] = round(`e_p', `deci')
-				local e_count = e(count)[1, "`var'"]
-				matrix ttest_stat[`i',4] = round(`e_count', `deci')
-				local i = `i'+ 1
+
+			if "`present'" == "" {
+				matrix ttest_stat = J(`var_len', 4, 0)
+				matrix colnames ttest_stat = "Diff" "Std.Err." "P-value"  "N"
+				matrix rownames ttest_stat = `rowname_li'
+				local i = 1
+				foreach var in `anything' {
+					local e_b = e(b)[1, "`var'"]
+					matrix ttest_stat[`i',1] = round(`e_b', `deci')
+					local e_se = e(se)[1, "`var'"]
+					matrix ttest_stat[`i',2] = round(`e_se', `deci')
+					local e_p = e(p)[1, "`var'"]
+					matrix ttest_stat[`i',3] = round(`e_p', `deci')
+					local e_count = e(count)[1, "`var'"]
+					matrix ttest_stat[`i',4] = round(`e_count', `deci')
+					local i = `i'+ 1
+				}
+				mat2txt, matrix(ttest_stat) saving("`edir'") title("T-test for (`tgroup') `addn'") append
 			}
-			mat2txt, matrix(ttest_stat) saving("`edir'") title("T-test for (`tgroup')") append
+			else {
+				matrix ttest_stat = J(`var_len', 10, 0)
+				matrix colnames ttest_stat = "Mean1" "Median1" "N1" "Mean2" "Median2" "N2" "Diff-mean" "P-value" "Diff-median" "N"
+				matrix rownames ttest_stat = `rowname_li'
+				local i = 1
+				foreach var in `anything' {
+					matrix ttest_stat[`i',1] = summatrix1[`i',2]
+					matrix ttest_stat[`i',2] = summatrix1[`i',6]
+					matrix ttest_stat[`i',3] = summatrix1[`i',1]
+					matrix ttest_stat[`i',4] = summatrix2[`i',2]
+					matrix ttest_stat[`i',5] = summatrix2[`i',6]
+					matrix ttest_stat[`i',6] = summatrix2[`i',1]
+					local e_b = e(b)[1, "`var'"]
+					matrix ttest_stat[`i',7] = round(`e_b', `deci')
+					local e_p = e(p)[1, "`var'"]
+					matrix ttest_stat[`i',8] = round(`e_p', `deci')
+					local mediandiff = summatrix1[`i',6] - summatrix2[`i',6]
+					matrix ttest_stat[`i',9] = round(`mediandiff', `deci')	
+					local e_count = e(count)[1, "`var'"]
+					matrix ttest_stat[`i',10] = round(`e_count', `deci')					
+					local i = `i'+ 1
+				}
+				mat2txt, matrix(ttest_stat) saving("`edir'") title("T-test for (`tgroup') `addn'") append
+			}
 
 			estimates clear
 			ereturn clear

@@ -19,4 +19,11 @@ This repository contains Stata programs and help files to support more efficient
 - `corp_fin.ado` – Main program script  
 - `regx.sthlp` – Help file for regression module  
 - `eqx.sthlp` – Help file for coefficient equality module  
-- `sumx.sthlp` – Help file for summary statistics module
+- `sumx.sthlp` – Help file for summary statistics module  
+
+## Stata Installation
+
+To install or update the toolkit in Stata, type:
+
+```stata
+net install corp_fin, from(https://raw.github.com/evanhaozhao/corp-fin-ado-toolkit/main) replace

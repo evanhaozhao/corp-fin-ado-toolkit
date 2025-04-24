@@ -1,7 +1,7 @@
 ------------------------------------------------
-Package     Description                     Date
+Package     Description                     Last modified
 ------------------------------------------------
-regx        Regression enhancements         6 Jan 2025
-eqx         Equation solver extensions      1 Jan 2025
-sumx        Advanced summary statistics     26 Dec 2024
+regx        From regression to output         April 24, 2025
+eqx         From coefficient equality to output   January 16, 2025
+sumx        Summary statistics and t-tests     April 19, 2025
 ------------------------------------------------

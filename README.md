@@ -1,8 +1,22 @@
+# Corporate Finance Empirical Programs
 
-## Corporate finance toolkit
+This repository contains Stata programs and help files to support more efficient empirical analysis in corporate finance.
 
-- `regx`: from regressions to output
-- `eqx`: chi-square tests for coeffcients (within model/subsamples)
-- `gen_time`: generating time indicator
-- `gen_dynamic`: generating dynamic time indicator
-- `find_psmpair`: PSM + summary output
+---
+
+**Project:** Programs for Corporate Finance Empirical Studies  
+**Created:** August 19, 2023  
+**Last Modified:** April 19, 2025  
+
+## Version Information
+
+- **regx**: v1.7.6 (April 24, 2025)  
+- **eqx**: v2.2.5 (January 16, 2025)  
+- **sumx**: v1.3.4 (April 19, 2025)
+
+## Files
+
+- `corp_fin.ado` – Main program script  
+- `regx.sthlp` – Help file for regression module  
+- `eqx.sthlp` – Help file for coefficient equality module  
+- `sumx.sthlp` – Help file for summary statistics module

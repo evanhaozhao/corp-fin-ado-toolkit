@@ -14,7 +14,7 @@
 {depvars} {ifin}
 {cmd:,} {opth indep(indepvars)}
 [{opth ctrl(controlvars)} {opth absr(absorbvars)} {opth rotctrl(controlvar_list)} {opth xtp(i t [_r_effect])}
-{opth inte(interactlist)} {opth clust(clustervar)} {opth dyn(event [, y=, b=, p=, c=, s=])} {opth rotctrl(controlvar_list)} {opth tobit(ll=, ul=)}
+{opth inte(interactlist)} {opth clust(clustervar)} {opth dyn(event [, y=, b=, p=, c=, s=])} {opth tobit(ll=, ul=)}
 {opth tnote(string)} {opth ttitle(string)} {opth addn(string)} {opth edir(directory)} {opth keepvar(vars)}
 {opth stosuf(string)} {opth sigout(string)} {opth sigkw(string)} {opth rcoefidx(string)} 
 {opth rename(string)} {cmd:RCOEF} {cmd:SIGMAT} {cmd:REPORT} {cmd:DISPLAY} 

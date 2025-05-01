@@ -3,7 +3,7 @@
  * Project: Programs for corporate finance empirical studies
  * Author: Hao Zhao
  * Version
-	- eqx: 2.2.5 (16jan2025)
+	- eqx: 2.2.6 (1may2025)
  */
 ///=============================================================================
 /* eqx -> Chi-square coefficient equality test
@@ -18,15 +18,15 @@ program eqx
 
 	syntax anything [if] [in] , indep(namelist) eqt(string) [ctrl(string) absr(string) xtp(string) ///
 	inte(string) clust(namelist) dyn(string) rotctrl(string) dep2(string) ///
-	tnote(string) ttitle(string) addn(string) edir(string) sigout(string) sigkw(string) rename(string) ROTINTE REPORT EXPORT]
+	tnote(string) ttitle(string) addn(string) edir(string) sigout(string) sigkw(string) rename(string) ROTINTE REPORT EXPORT NOROUNDDECI]
 	
 	marksample touse
 	
 	/* restore arguments for regx */
 	local fullopt_args = ""
-	foreach opt in ctrl absr xtp inte clust dyn rotctrl tnote ttitle edir report rotinte rename {
+	foreach opt in ctrl absr xtp inte clust dyn rotctrl tnote ttitle edir report rotinte rename norounddeci {
 		if ("``opt''"!="") {
-			if ("``opt''"!="report" & "``opt''"!="rotinte") {
+			if ("``opt''"!="report" & "``opt''"!="rotinte" & "``opt''"!="norounddeci") {
 				local `opt'_arg = "`opt'(``opt'')"
 				local fullopt_args = "`fullopt_args' ``opt'_arg'"
 			}

@@ -16,7 +16,7 @@
 [{opth ctrl(controlvars)} {opth absr(absorbvars)} {opth rotctrl(controlvar_list)} {opth xtp(i t [_r_effect])}
 {opth inte(interactlist)} {opth clust(clustervar)} {opth dyn(event [, y=, b=, p=, c=, s=])} {opth dep2(depvars2)}
 {opth tnote(string)} {opth ttitle(string)} {opth addn(string)} {opth edir(directory)} {opth sigout(string)} {opth sigkw(string)} 
-{opth rename(string)} {cmd:ROTINTE} {cmd:REPORT} {cmd:EXPORT}
+{opth rename(string)} {cmd:ROTINTE} {cmd:REPORT} {cmd:EXPORT} {cmd:NOROUNDDECI}
 {help eqx##options_table:options}]
 {p_end}
 
@@ -81,7 +81,7 @@
 {synopt : }- If not specified, setting global ${dir_table_flow} as the default export directory{p_end}
 {synopt: {cmd:REPORT}}Reporting the coefficients for all variables{p_end}
 {synopt: {cmd:EXPORT}}Exporting the regression tables at the same time using {cmd:regx}{p_end}
-
+{synopt: {cmd:NOROUNDDECI}}If specified, output tables will keep 3-digit non-zero numbers, instead of rounding to 3-digit after the decimal point{p_end}
 
 {marker contact}{...}
 {title:Author}

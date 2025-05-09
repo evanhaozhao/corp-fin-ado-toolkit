@@ -3,7 +3,7 @@
  * Project: Programs for corporate finance empirical studies
  * Author: Hao Zhao
  * Version
- 	- regx: 1.7.7 (9may2025)
+ 	- regx: 1.8.0 (9may2025)
  */
 ///=============================================================================
 /* regx -> regressions to output tables */
@@ -14,7 +14,7 @@ program regx, rclass sortpreserve
 	syntax anything [if] [in] , indep(namelist) [ctrl(string) absr(string) xtp(string) ///
 	inte(string) clust(namelist) dyn(string) rotctrl(string) tobit(string) ///
 	tnote(string) ttitle(string) addn(string) edir(string) keepvar(string) ///
-	stosuf(string) sigout(string) sigkw(string) rcoefidx(string) rename(string) ///
+	stosuf(string) sigout(string) sigkw(string) rcoefidx(string) rename(string) parmsetout(string) ///
 	SIGMAT RCOEF ROTINTE REPORT DISPLAY CHISTORE NOSINGLETON POISSON NOROUNDDECI]
 	
 	marksample touse
@@ -764,6 +764,14 @@ program regx, rclass sortpreserve
 				drop(`drop_ctrl') stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label') fmt(0 %9.3f `add_fmt')) rename(_cons "Constant" `rename_str') ///
 				order(`var_order') mtitles(`colname') title("`table_title'") note("`table_note'") `bdeciopt'
 			}
+		}
+	}
+	/* if display is enabled */
+	else {
+		/* Store the last estimates in dta via parmest */
+		if "`parmsetout'" != "" {
+			di in red "Saving coefficient estimates into path `parmsetout'"
+			parmest, saving("`parmsetout'", replace) format(parm %20s estimate %8.3f std %8.3f t %8.3f min95 %8.3f max95 %8.3f p %8.2f)
 		}
 	}
 		

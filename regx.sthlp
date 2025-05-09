@@ -87,6 +87,7 @@
 {synopt : }- If "`sigout'"=="1" | "`sigout'"=="baseline" | "`sigout'"=="`sigkw'", starting to append results on a new table{p_end}
 {synopt: {opth rcoefidx(string)}}Input number index, and export index as a column for {cmd:RCOEF} output{p_end}
 {synopt: {opth rename(string)}}Consistently rename all the independent variables to the same output name{p_end}
+{synopt: {opth parmsetout(path)}}Using {help parmset:parmset} to export the estimates in a path. Option {cmd:DISPLAY} is required.{p_end}
 {synopt: {cmd:RCOEF}}Export b, t, and p for each set of regressions. If title and column names are needed for export tables, {opth addn(string)} must include "(rcoef)"{p_end}
 {synopt : }- {cmd:RCOEF} cannot be used with {opth sigout(string)} or {cmd:SIGMAT}{p_end}
 {synopt: {cmd:SIGMAT}}Display and return sign and significance matrix{p_end}

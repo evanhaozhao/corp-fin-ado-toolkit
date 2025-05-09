@@ -5,7 +5,7 @@
  * Created: August 19, 2023
  * Modified: April 19, 2025
  * Version
- 	- regx: 1.7.6 (24apr2025)
+ 	- regx: 1.7.7 (9may2025)
 	- eqx: 2.2.6 (1may2025)
 	- sumx: 1.3.4 (19apr2025)
  */
@@ -742,13 +742,14 @@ program regx, rclass sortpreserve
 		if ("`tobit'"!="") {
 			local add_stat = "N_lc N_unc N_rc"
 			local add_label = `" "L Censored" "Uncensored" "R Censored""'
+			local add_fmt = "%9.3f %9.3f %9.3f"
 		}
 		
 		/* If export full variable reports */
 		if ("`report'"!="") {
 			/* no drop */
 			esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
-			stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label')) rename(_cons "Constant" `rename_str') ///
+			stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label') fmt(0 %9.3f `add_fmt')) rename(_cons "Constant" `rename_str') ///
 			order(`var_order' `ctrl') mtitles(`colname') title("`table_title'") note("`table_note'") `bdeciopt'
 		}
 		else {
@@ -758,13 +759,13 @@ program regx, rclass sortpreserve
 				}
 				/* keep selected variables */
 				esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
-				drop(`drop_ctrl') stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label')) rename(_cons "Constant" `rename_str') ///
+				drop(`drop_ctrl') stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label') fmt(0 %9.3f `add_fmt')) rename(_cons "Constant" `rename_str') ///
 				order(`var_order' `keepvar') mtitles(`colname') title("`table_title'") note("`table_note'") `bdeciopt'	
 			}
 			else {
 				/* drop control */
 				esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
-				drop(`drop_ctrl') stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label')) rename(_cons "Constant" `rename_str') ///
+				drop(`drop_ctrl') stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label') fmt(0 %9.3f `add_fmt')) rename(_cons "Constant" `rename_str') ///
 				order(`var_order') mtitles(`colname') title("`table_title'") note("`table_note'") `bdeciopt'
 			}
 		}

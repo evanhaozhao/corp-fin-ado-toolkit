@@ -1,7 +1,7 @@
 ------------------------------------------------
 Package     Description                     Last modified
 ------------------------------------------------
-regx        From regression to output         May 9, 2025
+regx        From regression to output         June 27, 2025
 eqx         From coefficient equality to output   January 16, 2025
 sumx        Summary statistics and t-tests     April 19, 2025
 ------------------------------------------------

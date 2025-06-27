@@ -12,8 +12,12 @@
 capture program drop sumx
 program sumx, sortpreserve
 
+	/* 
+	 * FULLPERC: report more percentile values other than min, p25, p50, p75, and max
+	 */
+
 	syntax anything [if] [in], deci(numlist) edir(string) [category(string) tgroup(string) tvar(string) ///
-	ttitle(string) addn(string) RLABEL TTEST ONLYT PRESENT]
+	ttitle(string) addn(string) FULLPERC RLABEL TTEST ONLYT PRESENT]
 	
 	marksample touse
 
@@ -220,8 +224,14 @@ program sumx, sortpreserve
 	}
 	
 	if ("`category'" == "" & "`tgroup'" == "" & "`tvar'" == "") {
-		matrix sum_stat = J(`var_len', 8, 0)
-		matrix colnames sum_stat = "Obs" "Mean" "Std.Dev." "Min" "p25" "Median" "p75" "Max"
+		if ("`fullperc'" == "") {
+			matrix sum_stat = J(`var_len', 8, 0)
+			matrix colnames sum_stat = "Obs" "Mean" "Std.Dev." "Min" "p25" "Median" "p75" "Max"
+		}
+		else {
+			matrix sum_stat = J(`var_len', 14, 0)
+			matrix colnames sum_stat = "Obs" "Mean" "Std.Dev." "Min" "p1" "p5" "p10" "p25" "Median" "p75" "p90" "p95" "p99" "Max"			
+		}
 		local rowname_li = `""'
 		foreach sum_v in `anything' {
 			if ("`rlabel'" != "") {
@@ -239,18 +249,41 @@ program sumx, sortpreserve
 			}
 		}
 		matrix rownames sum_stat = `rowname_li'
-		local i = 1
-		foreach x in `anything' {
-			quiet: summ `x' if `touse', detail
-			matrix sum_stat[`i',1] = r(N)
-			matrix sum_stat[`i',2] = round(r(mean), `deci')
-			matrix sum_stat[`i',3] = round(r(sd), `deci')
-			matrix sum_stat[`i',4] = round(r(min), `deci')
-			matrix sum_stat[`i',5] = round(r(p25), `deci')
-			matrix sum_stat[`i',6] = round(r(p50), `deci')
-			matrix sum_stat[`i',7] = round(r(p75), `deci')
-			matrix sum_stat[`i',8] = round(r(max), `deci')
-			local i = `i'+ 1
+		if ("`fullperc'" == "") {
+			local i = 1
+			foreach x in `anything' {
+				quiet: summ `x' if `touse', detail
+				matrix sum_stat[`i',1] = r(N)
+				matrix sum_stat[`i',2] = round(r(mean), `deci')
+				matrix sum_stat[`i',3] = round(r(sd), `deci')
+				matrix sum_stat[`i',4] = round(r(min), `deci')
+				matrix sum_stat[`i',5] = round(r(p25), `deci')
+				matrix sum_stat[`i',6] = round(r(p50), `deci')
+				matrix sum_stat[`i',7] = round(r(p75), `deci')
+				matrix sum_stat[`i',8] = round(r(max), `deci')
+				local i = `i'+ 1
+			}
+		}
+		else {
+			local i = 1
+			foreach x in `anything' {
+				quiet: summ `x' if `touse', detail
+				matrix sum_stat[`i',1] = r(N)
+				matrix sum_stat[`i',2] = round(r(mean), `deci')
+				matrix sum_stat[`i',3] = round(r(sd), `deci')
+				matrix sum_stat[`i',4] = round(r(min), `deci')
+				matrix sum_stat[`i',5] = round(r(p1), `deci')
+				matrix sum_stat[`i',6] = round(r(p5), `deci')
+				matrix sum_stat[`i',7] = round(r(p10), `deci')
+				matrix sum_stat[`i',8] = round(r(p25), `deci')
+				matrix sum_stat[`i',9] = round(r(p50), `deci')
+				matrix sum_stat[`i',10] = round(r(p75), `deci')
+				matrix sum_stat[`i',11] = round(r(p90), `deci')
+				matrix sum_stat[`i',12] = round(r(p95), `deci')
+				matrix sum_stat[`i',13] = round(r(p99), `deci')
+				matrix sum_stat[`i',14] = round(r(max), `deci')
+				local i = `i'+ 1
+			}			
 		}
 		mat2txt, matrix(sum_stat) saving("`edir'") title("`table_title'") append
 		

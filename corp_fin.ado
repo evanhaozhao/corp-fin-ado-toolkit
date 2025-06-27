@@ -5,7 +5,7 @@
  * Created: August 19, 2023
  * Modified: April 19, 2025
  * Version
- 	- regx: 1.8.0 (9may2025)
+ 	- regx: 1.8.1 (27jun2025)
 	- eqx: 2.2.6 (1may2025)
 	- sumx: 1.3.4 (19apr2025)
  */
@@ -19,7 +19,7 @@ program regx, rclass sortpreserve
 	inte(string) clust(namelist) dyn(string) rotctrl(string) tobit(string) ///
 	tnote(string) ttitle(string) addn(string) edir(string) keepvar(string) ///
 	stosuf(string) sigout(string) sigkw(string) rcoefidx(string) rename(string) parmsetout(string) ///
-	SIGMAT RCOEF ROTINTE REPORT DISPLAY CHISTORE NOSINGLETON POISSON NOROUNDDECI]
+	SIGMAT RCOEF ROTINTE REPORT DISPLAY CHISTORE NOSINGLETON POISSON NOROUNDDECI ROUNDTOFOUR RWITHIN]
 	
 	marksample touse
 
@@ -40,7 +40,12 @@ program regx, rclass sortpreserve
 	
 	/* No rounding decimals to 3-digit */
 	if "`norounddeci'" == "" {
-		local bdeciopt = `" b(%8.3f) "'
+		if "`roundtofour'" == "" {
+			local bdeciopt = `" b(%8.3f) "'
+		}
+		else {
+			local bdeciopt = `" b(%8.4f) "'
+		}
 	}
 
 	/* singleton setting for reghdfe */
@@ -746,10 +751,19 @@ program regx, rclass sortpreserve
 		}
 		
 		/* If export full variable reports */
+		if ("`rwithin'"=="") {
+			local r2setting = "r2_a"
+			local r2desc = "Adjusted R-squared"
+		}
+		else {
+			local r2setting = "r2_a_within"
+			local r2desc = "Adjusted R-sq (within)"
+		}
+
 		if ("`report'"!="") {
 			/* no drop */
 			esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
-			stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label') fmt(0 %9.3f `add_fmt')) rename(_cons "Constant" `rename_str') ///
+			stats(N `r2setting' `add_stat', labels("Observations" "`r2desc'" `add_label') fmt(0 %9.3f `add_fmt')) rename(_cons "Constant" `rename_str') ///
 			order(`var_order' `ctrl') mtitles(`colname') title("`table_title'") note("`table_note'") `bdeciopt'
 		}
 		else {
@@ -759,13 +773,13 @@ program regx, rclass sortpreserve
 				}
 				/* keep selected variables */
 				esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
-				drop(`drop_ctrl') stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label') fmt(0 %9.3f `add_fmt')) rename(_cons "Constant" `rename_str') ///
+				drop(`drop_ctrl') stats(N `r2setting' `add_stat', labels("Observations" "`r2desc'" `add_label') fmt(0 %9.3f `add_fmt')) rename(_cons "Constant" `rename_str') ///
 				order(`var_order' `keepvar') mtitles(`colname') title("`table_title'") note("`table_note'") `bdeciopt'	
 			}
 			else {
 				/* drop control */
 				esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
-				drop(`drop_ctrl') stats(N r2_a `add_stat', labels("Observations" "Adjusted R-squared" `add_label') fmt(0 %9.3f `add_fmt')) rename(_cons "Constant" `rename_str') ///
+				drop(`drop_ctrl') stats(N `r2setting' `add_stat', labels("Observations" "`r2desc'" `add_label') fmt(0 %9.3f `add_fmt')) rename(_cons "Constant" `rename_str') ///
 				order(`var_order') mtitles(`colname') title("`table_title'") note("`table_note'") `bdeciopt'
 			}
 		}
@@ -1688,8 +1702,12 @@ end
 capture program drop sumx
 program sumx, sortpreserve
 
+	/* 
+	 * FULLPERC: report more percentile values other than min, p25, p50, p75, and max
+	 */
+
 	syntax anything [if] [in], deci(numlist) edir(string) [category(string) tgroup(string) tvar(string) ///
-	ttitle(string) addn(string) RLABEL TTEST ONLYT PRESENT]
+	ttitle(string) addn(string) FULLPERC RLABEL TTEST ONLYT PRESENT]
 	
 	marksample touse
 
@@ -1896,8 +1914,14 @@ program sumx, sortpreserve
 	}
 	
 	if ("`category'" == "" & "`tgroup'" == "" & "`tvar'" == "") {
-		matrix sum_stat = J(`var_len', 8, 0)
-		matrix colnames sum_stat = "Obs" "Mean" "Std.Dev." "Min" "p25" "Median" "p75" "Max"
+		if ("`fullperc'" == "") {
+			matrix sum_stat = J(`var_len', 8, 0)
+			matrix colnames sum_stat = "Obs" "Mean" "Std.Dev." "Min" "p25" "Median" "p75" "Max"
+		}
+		else {
+			matrix sum_stat = J(`var_len', 14, 0)
+			matrix colnames sum_stat = "Obs" "Mean" "Std.Dev." "Min" "p1" "p5" "p10" "p25" "Median" "p75" "p90" "p95" "p99" "Max"			
+		}
 		local rowname_li = `""'
 		foreach sum_v in `anything' {
 			if ("`rlabel'" != "") {
@@ -1915,18 +1939,41 @@ program sumx, sortpreserve
 			}
 		}
 		matrix rownames sum_stat = `rowname_li'
-		local i = 1
-		foreach x in `anything' {
-			quiet: summ `x' if `touse', detail
-			matrix sum_stat[`i',1] = r(N)
-			matrix sum_stat[`i',2] = round(r(mean), `deci')
-			matrix sum_stat[`i',3] = round(r(sd), `deci')
-			matrix sum_stat[`i',4] = round(r(min), `deci')
-			matrix sum_stat[`i',5] = round(r(p25), `deci')
-			matrix sum_stat[`i',6] = round(r(p50), `deci')
-			matrix sum_stat[`i',7] = round(r(p75), `deci')
-			matrix sum_stat[`i',8] = round(r(max), `deci')
-			local i = `i'+ 1
+		if ("`fullperc'" == "") {
+			local i = 1
+			foreach x in `anything' {
+				quiet: summ `x' if `touse', detail
+				matrix sum_stat[`i',1] = r(N)
+				matrix sum_stat[`i',2] = round(r(mean), `deci')
+				matrix sum_stat[`i',3] = round(r(sd), `deci')
+				matrix sum_stat[`i',4] = round(r(min), `deci')
+				matrix sum_stat[`i',5] = round(r(p25), `deci')
+				matrix sum_stat[`i',6] = round(r(p50), `deci')
+				matrix sum_stat[`i',7] = round(r(p75), `deci')
+				matrix sum_stat[`i',8] = round(r(max), `deci')
+				local i = `i'+ 1
+			}
+		}
+		else {
+			local i = 1
+			foreach x in `anything' {
+				quiet: summ `x' if `touse', detail
+				matrix sum_stat[`i',1] = r(N)
+				matrix sum_stat[`i',2] = round(r(mean), `deci')
+				matrix sum_stat[`i',3] = round(r(sd), `deci')
+				matrix sum_stat[`i',4] = round(r(min), `deci')
+				matrix sum_stat[`i',5] = round(r(p1), `deci')
+				matrix sum_stat[`i',6] = round(r(p5), `deci')
+				matrix sum_stat[`i',7] = round(r(p10), `deci')
+				matrix sum_stat[`i',8] = round(r(p25), `deci')
+				matrix sum_stat[`i',9] = round(r(p50), `deci')
+				matrix sum_stat[`i',10] = round(r(p75), `deci')
+				matrix sum_stat[`i',11] = round(r(p90), `deci')
+				matrix sum_stat[`i',12] = round(r(p95), `deci')
+				matrix sum_stat[`i',13] = round(r(p99), `deci')
+				matrix sum_stat[`i',14] = round(r(max), `deci')
+				local i = `i'+ 1
+			}			
 		}
 		mat2txt, matrix(sum_stat) saving("`edir'") title("`table_title'") append
 		

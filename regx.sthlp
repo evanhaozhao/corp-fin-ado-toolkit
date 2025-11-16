@@ -1,6 +1,6 @@
 {smcl}
-{* *! version 1.7.6 24apr2025}{...}
-{* Date: 24apr2025}
+{* *! version 1.8.2 16nov2025}{...}
+{* Date: 16nov2025}
 {title:Help for {cmd:regx}}
 
 {p2colset 5 18 20 2}{...}

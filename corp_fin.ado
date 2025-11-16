@@ -3,11 +3,11 @@
  * Project: Programs for corporate finance empirical studies
  * Author: Hao Zhao
  * Created: August 19, 2023
- * Modified: April 19, 2025
+ * Modified: September 17, 2025
  * Version
- 	- regx: 1.8.1 (27jun2025)
+ 	- regx: 1.8.2 (16nov2025)
 	- eqx: 2.2.6 (1may2025)
-	- sumx: 1.3.4 (19apr2025)
+	- sumx: 1.3.6 (17sep2025)
  */
 ///=============================================================================
 /* regx -> regressions to output tables */
@@ -19,7 +19,7 @@ program regx, rclass sortpreserve
 	inte(string) clust(namelist) dyn(string) rotctrl(string) tobit(string) ///
 	tnote(string) ttitle(string) addn(string) edir(string) keepvar(string) ///
 	stosuf(string) sigout(string) sigkw(string) rcoefidx(string) rename(string) parmsetout(string) ///
-	SIGMAT RCOEF ROTINTE REPORT DISPLAY CHISTORE NOSINGLETON POISSON NOROUNDDECI ROUNDTOFOUR RWITHIN]
+	SIGMAT RCOEF ROTINTE REPORT DISPLAY CHISTORE NOSINGLETON POISSON NOROUNDDECI ROUNDTOFOUR RWITHIN EXPORTT]
 	
 	marksample touse
 
@@ -54,6 +54,14 @@ program regx, rclass sortpreserve
 	}
 	else {
 		local singletonset = `" keepsingleton "'
+	}
+
+	/* If exporting t-value instead of se */
+	if ("`exportt'"!="") {
+		local sereport = `""'
+	}
+	else {
+		local sereport = `" not se "'
 	}
 
 	/* `suest` does not support xtreg random effect; the estimation of xtreg fe is done by reg..absorb */
@@ -762,7 +770,7 @@ program regx, rclass sortpreserve
 
 		if ("`report'"!="") {
 			/* no drop */
-			esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
+			esttab using "`exportfile'", append nolines `sereport' star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
 			stats(N `r2setting' `add_stat', labels("Observations" "`r2desc'" `add_label') fmt(0 %9.3f `add_fmt')) rename(_cons "Constant" `rename_str') ///
 			order(`var_order' `ctrl') mtitles(`colname') title("`table_title'") note("`table_note'") `bdeciopt'
 		}
@@ -772,13 +780,13 @@ program regx, rclass sortpreserve
 					local drop_ctrl : subinstr local drop_ctrl "`kpv'" "", all
 				}
 				/* keep selected variables */
-				esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
+				esttab using "`exportfile'", append nolines `sereport' star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
 				drop(`drop_ctrl') stats(N `r2setting' `add_stat', labels("Observations" "`r2desc'" `add_label') fmt(0 %9.3f `add_fmt')) rename(_cons "Constant" `rename_str') ///
 				order(`var_order' `keepvar') mtitles(`colname') title("`table_title'") note("`table_note'") `bdeciopt'	
 			}
 			else {
 				/* drop control */
-				esttab using "`exportfile'", append nolines not se star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
+				esttab using "`exportfile'", append nolines `sereport' star(* 0.1 ** 0.05 *** 0.01) compress nogaps ///
 				drop(`drop_ctrl') stats(N `r2setting' `add_stat', labels("Observations" "`r2desc'" `add_label') fmt(0 %9.3f `add_fmt')) rename(_cons "Constant" `rename_str') ///
 				order(`var_order') mtitles(`colname') title("`table_title'") note("`table_note'") `bdeciopt'
 			}
@@ -921,12 +929,12 @@ program regx, rclass sortpreserve
 				}
 				esttab using "`sigsummaryfile'", cells("`cellname_li'") ///
 				collabels(`b_col_name') mlabels(,none) eqlab(,none) title(`table_title') ///
-				append nolines not se compress nogaps noobs plain
+				append nolines `sereport' compress nogaps noobs plain
 			}
 			else {
 				esttab using "`sigsummaryfile'", cells("`cellname_li'") ///
 				collabels(,none) mlabels(,none) eqlab(,none) ///
-				append nolines not se compress nogaps noobs plain
+				append nolines `sereport' compress nogaps noobs plain
 			}
  		}
 		return matrix sigmat = B
@@ -1051,12 +1059,12 @@ program regx, rclass sortpreserve
 					}
 					esttab using "`btpsummaryfile'", cells("`cellname_li'") ///
 					collabels(`btp_c_col_name') mlabels(,none) eqlab(,none) title(`table_title') ///
-					append nolines not se compress nogaps noobs plain					
+					append nolines `sereport' compress nogaps noobs plain					
 				}
 				else {
 					esttab using "`btpsummaryfile'", cells("`cellname_li'") ///
 					collabels(,none) mlabels(,none) eqlab(,none) ///
-					append nolines not se compress nogaps noobs plain
+					append nolines `sereport' compress nogaps noobs plain
 				}
 			}
 		}
@@ -1207,7 +1215,7 @@ program eqx
 		forval colidx = 1/`colidxs' {
 			estadd matrix c`colidx'
 		}
-		esttab using "`exportfile'", cells("`cellnames'") append nolines not se compress nogaps noobs plain ///
+		esttab using "`exportfile'", cells("`cellnames'") append nolines `sereport' compress nogaps noobs plain ///
 		star(* 0.1 ** 0.05 *** 0.01) title("Chi-square: [`lhsvar']==[`rhsvar'] `addn' `extra_addn'") ///
 		mtitle("[`sigidx' out of `colidxs' columns have significant difference]")
 
@@ -1793,7 +1801,7 @@ program sumx, sortpreserve
 			
 			estpost ttest `anything' if `touse', by(`tgroup')
 
-			if "`present'" == "" {
+			if ("`present'" == "") {
 				matrix ttest_stat = J(`var_len', 4, 0)
 				matrix colnames ttest_stat = "Diff" "Std.Err." "P-value"  "N"
 				matrix rownames ttest_stat = `rowname_li'
@@ -1812,8 +1820,8 @@ program sumx, sortpreserve
 				mat2txt, matrix(ttest_stat) saving("`edir'") title("T-test for (`tgroup') `addn'") append
 			}
 			else {
-				matrix ttest_stat = J(`var_len', 10, 0)
-				matrix colnames ttest_stat = "Mean1" "Median1" "N1" "Mean2" "Median2" "N2" "Diff-mean" "P-value" "Diff-median" "N"
+				matrix ttest_stat = J(`var_len', 11, 0)
+				matrix colnames ttest_stat = "Mean1" "Median1" "N1" "Mean2" "Median2" "N2" "Diff-mean" "P-value" "Diff-median" "P-value" "N"
 				matrix rownames ttest_stat = `rowname_li'
 				local i = 1
 				foreach var in `anything' {
@@ -1829,8 +1837,10 @@ program sumx, sortpreserve
 					matrix ttest_stat[`i',8] = round(`e_p', `deci')
 					local mediandiff = summatrix1[`i',6] - summatrix2[`i',6]
 					matrix ttest_stat[`i',9] = round(`mediandiff', `deci')	
+					qui: ranksum `var', by(`tgroup')
+					matrix ttest_stat[`i',10] = round(r(p), `deci')	
 					local e_count = e(count)[1, "`var'"]
-					matrix ttest_stat[`i',10] = round(`e_count', `deci')					
+					matrix ttest_stat[`i',11] = round(`e_count', `deci')					
 					local i = `i'+ 1
 				}
 				mat2txt, matrix(ttest_stat) saving("`edir'") title("T-test for (`tgroup') `addn'") append
@@ -1890,26 +1900,65 @@ program sumx, sortpreserve
 				mat2txt, matrix(sum_stat) saving("`edir'") title("`table_title' (variable list `vpair_idx')") append
 				local vpair_idx = `vpair_idx' + 1
 			}
-
-			matrix ttest_stat = J(`var_len', 4, 0)
-			matrix colnames ttest_stat = "Diff" "Std.Err." "P-value"  "N"
-			matrix rownames ttest_stat = `rowname_li'
-			forval var_idx = 1/`var_len' {	
-				local pair_v1 : word `var_idx' of `anything'
-				local pair_v2 : word `var_idx' of `tvar'
-				capture {
-					ttest `pair_v1' == `pair_v2' if `touse'
-					local e_b = r(mu_1) - r(mu_2)
-					matrix ttest_stat[`var_idx', 1] = round(`e_b', `deci')
-					local e_se = r(se)
-					matrix ttest_stat[`var_idx', 2] = round(`e_se', `deci')
-					local e_p = r(p)
-					matrix ttest_stat[`var_idx', 3] = round(`e_p', `deci')
-					local e_count = r(N_1)
-					matrix ttest_stat[`var_idx', 4] = round(`e_count', `deci')
+			
+			if ("`present'" == "") {
+				matrix ttest_stat = J(`var_len', 4, 0)
+				matrix colnames ttest_stat = "Diff" "Std.Err." "P-value"  "N"
+				matrix rownames ttest_stat = `rowname_li'
+				forval var_idx = 1/`var_len' {	
+					local pair_v1 : word `var_idx' of `anything'
+					local pair_v2 : word `var_idx' of `tvar'
+					capture {
+						ttest `pair_v1' == `pair_v2' if `touse'
+						local e_b = r(mu_1) - r(mu_2)
+						matrix ttest_stat[`var_idx', 1] = round(`e_b', `deci')
+						local e_se = r(se)
+						matrix ttest_stat[`var_idx', 2] = round(`e_se', `deci')
+						local e_p = r(p)
+						matrix ttest_stat[`var_idx', 3] = round(`e_p', `deci')
+						local e_count = r(N_1)
+						matrix ttest_stat[`var_idx', 4] = round(`e_count', `deci')
+					}
 				}
+				mat2txt, matrix(ttest_stat) saving("`edir'") title("T-test for (`: word 1 of `anything''==`: word 1 of `tvar'')") append
 			}
-			mat2txt, matrix(ttest_stat) saving("`edir'") title("T-test for (`: word 1 of `anything''==`: word 1 of `tvar'')") append
+			else {
+				matrix ttest_stat = J(`var_len', 11, 0)
+				matrix colnames ttest_stat = "Mean1" "Median1" "N1" "Mean2" "Median2" "N2" "Diff-mean" "P-value" "Diff-median" "P-value" "N"
+				matrix rownames ttest_stat = `rowname_li'
+				forval var_idx = 1/`var_len' {	
+					local pair_v1 : word `var_idx' of `anything'
+					local pair_v2 : word `var_idx' of `tvar'					
+					qui: summ `pair_v1', detail
+					local pair_v1_mn = r(mean)
+					local pair_v1_md = r(p50)
+					matrix ttest_stat[`var_idx',1] = round(`pair_v1_mn', `deci')
+					matrix ttest_stat[`var_idx',2] = round(`pair_v1_md', `deci')
+					matrix ttest_stat[`var_idx',3] = r(N)
+					qui: summ `pair_v2', detail
+					local pair_v2_mn = r(mean)
+					local pair_v2_md = r(p50)
+					matrix ttest_stat[`var_idx',4] = round(`pair_v2_mn', `deci')
+					matrix ttest_stat[`var_idx',5] = round(`pair_v2_md', `deci')
+					matrix ttest_stat[`var_idx',6] = r(N)
+					/* Report pairwise difference */
+					tempvar __pw_diff_var
+					gen `__pw_diff_var' = `pair_v1' - `pair_v2'
+					qui: summ `__pw_diff_var', detail
+					local diff_v12_mn = r(mean)
+					local diff_v12_md = r(p50)
+					matrix ttest_stat[`var_idx',7] = round(`diff_v12_mn', `deci')
+					qui: ttest `__pw_diff_var' = 0
+					local ttestobs = r(N_1)
+					matrix ttest_stat[`var_idx',8] = round(r(p), `deci')
+					matrix ttest_stat[`var_idx',9] = round(`diff_v12_md', `deci')
+					qui: signrank `pair_v1' = `pair_v2'
+					matrix ttest_stat[`var_idx',10] = round(r(p), `deci')
+					matrix ttest_stat[`var_idx',11] = `ttestobs'			
+				}
+				mat2txt, matrix(ttest_stat) saving("`edir'") title("T-test for (`: word 1 of `anything''==`: word 1 of `tvar'')") append
+			}
+			
 		}
 	}
 	

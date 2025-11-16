@@ -1,6 +1,6 @@
 {smcl}
-{* *! version 2.2.5 16jan2025}{...}
-{* Date: 16jan2025}
+{* *! version 2.2.6 1may2025}{...}
+{* Date: 1may2025}
 {title:Help for {cmd:eqx}}
 
 {p2colset 5 18 20 2}{...}

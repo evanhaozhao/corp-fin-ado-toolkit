@@ -1,11 +1,11 @@
 d  Project: Programs for corporate finance empirical studies
 d  Author: Hao Zhao
 d  Created: August 19, 2023
-d  Modified: June 27, 2025
+d  Modified: November 16, 2025
 d  Version
- 	- regx: 1.8.1 (27jun2025)
+ 	- regx: 1.8.2 (16nov2025)
 	- eqx: 2.2.5 (16jan2025)
-	- sumx: 1.3.4 (19apr2025)
+	- sumx: 1.3.6 (17sep2025)
 f regx.ado
 f eqx.ado
 f sumx.ado

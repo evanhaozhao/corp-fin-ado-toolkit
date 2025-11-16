@@ -10,9 +10,9 @@ This repository contains Stata programs and help files to support more efficient
 
 ## Version Information
 
-- **regx**: v1.8.1 (June 27, 2025)  
-- **eqx**: v2.2.5 (January 16, 2025)  
-- **sumx**: v1.3.4 (April 19, 2025)
+- **regx**: v1.8.2 1.8.2 (November 16, 2025)  
+- **eqx**: v2.2.6 (May 1, 2025)  
+- **sumx**: v1.3.6 (September 17, 2025)
 
 ## Files
 

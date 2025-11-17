@@ -54,7 +54,17 @@ program regx, rclass sortpreserve
 
 	/* If exporting t-value instead of se */
 	if ("`exportt'"!="") {
-		local sereport = `""'
+		if ("`norounddeci'" == "") {
+			if ("`roundtofour'" == "") {
+				local sereport = `" t(%8.3f) "'
+			}
+			else {
+				local sereport = `" t(%8.4f) "'
+			}
+		}
+		else {
+			local sereport = `" t(%8.3g) "'
+		}
 	}
 	else {
 		local sereport = `" not se "'

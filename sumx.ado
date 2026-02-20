@@ -3,7 +3,7 @@
  * Project: Programs for corporate finance empirical studies
  * Author: Hao Zhao
  * Version
-	- sumx: 1.3.6 (17sep2025)
+	- sumx: 1.3.7 (20feb2026)
  */
 ///=============================================================================
 /* sumx -> Generate summary statistics tables */
@@ -53,8 +53,14 @@ program sumx, sortpreserve
 		else {
 			local grpdumidx = 1
 			foreach group in `tdummies' {
-				matrix sum_stat = J(`var_len', 8, 0)
-				matrix colnames sum_stat = "Obs" "Mean" "Std.Dev." "Min" "p25" "Median" "p75" "Max"
+				if ("`ttest'" == "") {
+					matrix sum_stat = J(`var_len', 8, 0)
+					matrix colnames sum_stat = "Obs" "Mean" "Std.Dev." "Min" "p25" "Median" "p75" "Max"
+				}
+				else {
+					matrix sum_stat = J(`var_len', 10, 0)
+					matrix colnames sum_stat = "Obs" "Mean" "Std.Dev." "Min" "p25" "Median" "p75" "Max" "Pmean" "Pmedian"
+				}
 				local rowname_li = `""'
 				foreach sum_v in `anything' {
 					if ("`rlabel'" != "") {
@@ -90,6 +96,22 @@ program sumx, sortpreserve
 					matrix sum_stat[`i',6] = round(r(p50), `deci')
 					matrix sum_stat[`i',7] = round(r(p75), `deci')
 					matrix sum_stat[`i',8] = round(r(max), `deci')
+					if ("`ttest'" != "") {
+						if !missing(`numeric_value') {
+							quietly: ttest `var' = 0 if `touse' & `tgroup'==`group'
+						}
+						else {
+							quietly: ttest `var' = 0 if `touse' & `tgroup'=="`group'"
+						}
+						matrix sum_stat[`i',9] = round(r(p), `deci')
+						if !missing(`numeric_value') {
+							quietly: signrank `var' = 0 if `touse' & `tgroup'==`group'
+						}
+						else {
+							quietly: signrank `var' = 0 if `touse' & `tgroup'=="`group'"
+						}
+						matrix sum_stat[`i',10] = round(r(p), `deci')				
+					}
 					local i = `i'+ 1
 				}
 				matrix summatrix`grpdumidx' = sum_stat
@@ -139,7 +161,7 @@ program sumx, sortpreserve
 					matrix ttest_stat[`i',8] = round(`e_p', `deci')
 					local mediandiff = summatrix1[`i',6] - summatrix2[`i',6]
 					matrix ttest_stat[`i',9] = round(`mediandiff', `deci')	
-					qui: ranksum `var', by(`tgroup')
+					qui: ranksum `var' if `touse', by(`tgroup')
 					matrix ttest_stat[`i',10] = round(r(p), `deci')	
 					local e_count = e(count)[1, "`var'"]
 					matrix ttest_stat[`i',11] = round(`e_count', `deci')					
@@ -231,13 +253,13 @@ program sumx, sortpreserve
 				forval var_idx = 1/`var_len' {	
 					local pair_v1 : word `var_idx' of `anything'
 					local pair_v2 : word `var_idx' of `tvar'					
-					qui: summ `pair_v1', detail
+					qui: summ `pair_v1' if `touse', detail
 					local pair_v1_mn = r(mean)
 					local pair_v1_md = r(p50)
 					matrix ttest_stat[`var_idx',1] = round(`pair_v1_mn', `deci')
 					matrix ttest_stat[`var_idx',2] = round(`pair_v1_md', `deci')
 					matrix ttest_stat[`var_idx',3] = r(N)
-					qui: summ `pair_v2', detail
+					qui: summ `pair_v2' if `touse', detail
 					local pair_v2_mn = r(mean)
 					local pair_v2_md = r(p50)
 					matrix ttest_stat[`var_idx',4] = round(`pair_v2_mn', `deci')
@@ -246,15 +268,15 @@ program sumx, sortpreserve
 					/* Report pairwise difference */
 					tempvar __pw_diff_var
 					gen `__pw_diff_var' = `pair_v1' - `pair_v2'
-					qui: summ `__pw_diff_var', detail
+					quietly: summ `__pw_diff_var' if `touse', detail
 					local diff_v12_mn = r(mean)
 					local diff_v12_md = r(p50)
 					matrix ttest_stat[`var_idx',7] = round(`diff_v12_mn', `deci')
-					qui: ttest `__pw_diff_var' = 0
+					quietly: ttest `__pw_diff_var' = 0 if `touse'
 					local ttestobs = r(N_1)
 					matrix ttest_stat[`var_idx',8] = round(r(p), `deci')
 					matrix ttest_stat[`var_idx',9] = round(`diff_v12_md', `deci')
-					qui: signrank `pair_v1' = `pair_v2'
+					quietly: signrank `pair_v1' = `pair_v2' if `touse'
 					matrix ttest_stat[`var_idx',10] = round(r(p), `deci')
 					matrix ttest_stat[`var_idx',11] = `ttestobs'			
 				}
@@ -329,8 +351,8 @@ program sumx, sortpreserve
 		mat2txt, matrix(sum_stat) saving("`edir'") title("`table_title'") append
 		
 		if ("`ttest'" != "") {
-			matrix ttest_stat = J(`var_len', 4, 0)
-			matrix colnames ttest_stat = "Diff" "Std.Err." "P-value"  "N"
+			matrix ttest_stat = J(`var_len', 7, 0)
+			matrix colnames ttest_stat = "Diff-mean" "SE" "P-value"  "N" "Diff-median" "P-value" "N"
 			matrix rownames ttest_stat = `rowname_li'
 			forval var_idx = 1/`var_len' {
 				local pair_v1 : word `var_idx' of `anything'
@@ -344,9 +366,17 @@ program sumx, sortpreserve
 					matrix ttest_stat[`var_idx', 3] = round(`e_p', `deci')
 					local e_count = r(N_1)
 					matrix ttest_stat[`var_idx', 4] = round(`e_count', `deci')
+					quiet: summ `pair_v1' if `touse', detail
+					local e_b2 = r(p50)
+					matrix ttest_stat[`var_idx', 5] = round(`e_b2', `deci')
+					signrank `pair_v1' = 0 if `touse'
+					local e_p2 = r(p)
+					matrix ttest_stat[`var_idx', 6] = round(`e_p2', `deci')
+					local e_count2 = r(N)
+					matrix ttest_stat[`var_idx', 7] = round(`e_count2', `deci')
 				}
 			}
-			mat2txt, matrix(ttest_stat) saving("`edir'") title("T-test for (`: word 1 of `anything''== 0)") append
+			mat2txt, matrix(ttest_stat) saving("`edir'") title("Equality test for (`: word 1 of `anything''== 0)") append
 		}
 	}
 	else if ("`category'" != "") {

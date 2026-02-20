@@ -3,5 +3,5 @@ Package     Description                     Last modified
 ------------------------------------------------
 regx        From regression to output         November 16, 2025
 eqx         From coefficient equality to output   January 16, 2025
-sumx        Summary statistics and t-tests     September 17, 2025
+sumx        Summary statistics and t-tests     February 20, 2026
 ------------------------------------------------

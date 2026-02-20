@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.3.4 19apr2025}{...}
+{* *! version 1.3.7 20feb2026}{...}
 {* Date: 19apr2025}
 {title:Help for {cmd:sumx}}
 

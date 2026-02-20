@@ -6,13 +6,13 @@ This repository contains Stata programs and help files to support more efficient
 
 **Project:** Programs for Corporate Finance Empirical Studies  
 **Created:** August 19, 2023  
-**Last Modified:** May 9, 2025 
+**Last Modified:** February 20, 2026
 
 ## Version Information
 
 - **regx**: v1.8.2 1.8.2 (November 16, 2025)  
 - **eqx**: v2.2.6 (May 1, 2025)  
-- **sumx**: v1.3.6 (September 17, 2025)
+- **sumx**: v1.3.7 (February 20, 2026)
 
 ## Files
 

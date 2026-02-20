@@ -95,6 +95,7 @@
 {synopt: {cmd:DISPLAY}}Display regression results only, without exporting tables{p_end}
 {synopt: {cmd:CHISTORE}}Storing estimated results for {cmd:eqx}{p_end}
 {synopt: {cmd:NOROUNDDECI}}If specified, output tables will keep 3-digit non-zero numbers, instead of rounding to 3-digit after the decimal point{p_end}
+{synopt: {cmd:EXPORTT}}If specified, export tables with t-values instead of SEs{p_end}
 
 {marker contact}{...}
 {title:Author}
